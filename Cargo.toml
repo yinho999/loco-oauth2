@@ -1,13 +1,22 @@
 [package]
-name = "loco-oauth"
+name = "loco-oauth2"
 version = "0.1.0"
 edition = "2021"
+description = "A simple oauth2 library for loco"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/yinho999/loco-oauth2"
+homepage = "https://loco.rs/"
+keywords = ["loco", "oauth2"]
+categories = ["web-programming"]
 
 [lib]
 path = "src/lib.rs"
 
 [dependencies]
 async-trait = "0.1"
+axum = "0.7.4"
+loco-rs = { version = "0.3" }
 oauth2 = "4.4"
 reqwest = { version = "0.11",features = ["serde_json","json"] }
 serde = { version = "1.0", features = ["derive"] }

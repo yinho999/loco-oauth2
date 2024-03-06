@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-
 use crate::oauth2_store::oauth2_grant::OAuth2ClientGrantEnum;
 
 pub mod error;
