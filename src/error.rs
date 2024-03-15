@@ -4,6 +4,17 @@ use oauth2::{
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(thiserror::Error, Debug)]
+pub enum OAuth2StoreError {
+    /// Error for client not found within the store
+    #[error("Client not found")]
+    ClientNotFound,
+    
+    /// Error parsing from configuration JSON to OAuth2 configuration
+    #[error("Cannot parse JSON for OAuth2 configuration: {0}")]
+    ConfigJsonError(#[from] serde_json::Error),
+}
+#[allow(clippy::module_name_repetitions)]
+#[derive(thiserror::Error, Debug)]
 pub enum OAuth2ClientError {
     #[error(transparent)]
     UrlError(#[from] ParseError),
@@ -23,3 +34,4 @@ type BasicTokenError = RequestTokenError<
 >;
 
 pub type OAuth2ClientResult<T> = std::result::Result<T, OAuth2ClientError>;
+pub type OAuth2StoreResult<T> = std::result::Result<T, OAuth2StoreError>;

@@ -12,7 +12,7 @@ use reqwest::Response;
 use serde::{Deserialize, Serialize};
 use subtle::ConstantTimeEq;
 
-use crate::oauth2_store::error::{OAuth2ClientError, OAuth2ClientResult};
+use crate::error::{OAuth2ClientError, OAuth2ClientResult};
 
 /// A credentials struct that holds the `OAuth2` client credentials. - For
 /// [`AuthorizationCodeClient`]
