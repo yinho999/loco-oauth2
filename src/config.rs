@@ -1,9 +1,9 @@
+use crate::error::OAuth2StoreError;
 use crate::grants::authorization_code::{
     AuthorizationCodeCookieConfig, AuthorizationCodeCredentials, AuthorizationCodeUrlConfig,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::error::OAuth2StoreError;
 
 /// OAuth2 Authentication configuration
 ///

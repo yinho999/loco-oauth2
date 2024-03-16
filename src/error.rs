@@ -1,17 +1,55 @@
+use crate::oauth2_grant::OAuth2ClientGrantEnum;
 use oauth2::{
     basic::BasicErrorResponseType, url::ParseError, RequestTokenError, StandardErrorResponse,
 };
+use std::fmt::{Debug, Display};
 
 #[allow(clippy::module_name_repetitions)]
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error)]
 pub enum OAuth2StoreError {
     /// Error for client not found within the store
-    #[error("Client not found")]
     ClientNotFound,
-    
+    /// Error for client already exists but different `OAuth2ClientGrantEnum`
+    ClientTypeMismatch(String, OAuth2ClientGrantEnum),
     /// Error parsing from configuration JSON to OAuth2 configuration
-    #[error("Cannot parse JSON for OAuth2 configuration: {0}")]
     ConfigJsonError(#[from] serde_json::Error),
+    /// Error for client creation
+    ClientCreationError(#[from] OAuth2ClientError),
+}
+
+impl OAuth2StoreError {
+    /// Print the error message
+    fn message(&self) -> String {
+        match self {
+            Self::ClientNotFound => "Client not found".to_string(),
+            Self::ClientTypeMismatch(credential_identifier, client) => match client {
+                OAuth2ClientGrantEnum::AuthorizationCode(_) => {
+                    format!("Authorization Code client already exists with credential identifier: {}", credential_identifier)
+                }
+                OAuth2ClientGrantEnum::ClientCredentials => {
+                    format!("Client Credentials client already exists with credential identifier: {}", credential_identifier)
+                }
+                OAuth2ClientGrantEnum::DeviceCode => format!("Device Code client already exists with credential identifier: {}", credential_identifier),
+                OAuth2ClientGrantEnum::Implicit => format!("Implicit client already exists with credential identifier: {}", credential_identifier),
+                OAuth2ClientGrantEnum::ResourceOwnerPasswordCredentials => format!(
+                    "Resource Owner Password Credentials client already exists with credential identifier: {}", credential_identifier
+                ),
+            },
+            Self::ConfigJsonError(err) => format!("Cannot parse JSON for OAuth2 configuration: {}", err),
+            Self::ClientCreationError(err) => format!("Error creating client: {}", err),
+        }
+    }
+}
+
+impl Debug for OAuth2StoreError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message())
+    }
+}
+impl Display for OAuth2StoreError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message())
+    }
 }
 #[allow(clippy::module_name_repetitions)]
 #[derive(thiserror::Error, Debug)]
