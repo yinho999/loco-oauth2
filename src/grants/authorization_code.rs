@@ -155,6 +155,11 @@ pub trait AuthorizationCodeGrantTrait: Send + Sync {
     /// A mutable reference to the [`AuthorizationCodeClient`] instance.
     fn get_authorization_code_client(&mut self) -> &mut AuthorizationCodeClient;
 
+    /// Get `AuthorizationCodeCookieConfig` instance
+    /// # Returns
+    /// A reference to the `AuthorizationCodeCookieConfig` instance.
+    fn get_cookie_config(&self) -> &AuthorizationCodeCookieConfig;
+
     /// Get authorization URL
     /// # Returns
     /// A tuple containing the authorization URL and the CSRF token.
@@ -352,6 +357,9 @@ impl AuthorizationCodeGrantTrait for AuthorizationCodeClient {
     fn get_authorization_code_client(&mut self) -> &mut AuthorizationCodeClient {
         self
     }
+    fn get_cookie_config(&self) -> &AuthorizationCodeCookieConfig {
+        &self.cookie_config
+    }
 }
 
 #[cfg(test)]
@@ -516,6 +524,14 @@ mod tests {
             .get("state")
             .ok_or(TestError::QueryMapError("Couldnt find state".to_string()))?;
         assert_eq!(state[0], csrf_token.secret().to_owned());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn cookie_config() -> Result<(), TestError> {
+        let (client, settings) = create_client().await?;
+        let cookie_config = client.get_cookie_config();
+        assert_eq!(cookie_config.protected_url, None);
         Ok(())
     }
 

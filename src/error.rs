@@ -3,7 +3,6 @@ use oauth2::{
     basic::BasicErrorResponseType, url::ParseError, RequestTokenError, StandardErrorResponse,
 };
 use std::fmt::{Debug, Display};
-
 #[allow(clippy::module_name_repetitions)]
 #[derive(thiserror::Error)]
 pub enum OAuth2StoreError {
@@ -15,6 +14,8 @@ pub enum OAuth2StoreError {
     ConfigJsonError(#[from] serde_json::Error),
     /// Error for client creation
     ClientCreationError(#[from] OAuth2ClientError),
+    /// Error for converting key from `[u8]` to `Key`
+    KeyConversionError(#[from] cookie::KeyError),
 }
 
 impl OAuth2StoreError {
@@ -37,6 +38,7 @@ impl OAuth2StoreError {
             },
             Self::ConfigJsonError(err) => format!("Cannot parse JSON for OAuth2 configuration: {}", err),
             Self::ClientCreationError(err) => format!("Error creating client: {}", err),
+            Self::KeyConversionError(err) => format!("Error converting key: {}", err),
         }
     }
 }

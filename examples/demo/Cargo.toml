@@ -21,10 +21,10 @@ tracing = "0.1.40"
 chrono = "0.4"
 validator = { version = "0.16" }
 sea-orm = { version = "1.0.0-rc.1", features = [
-  "sqlx-sqlite",
-  "sqlx-postgres",
-  "runtime-tokio-rustls",
-  "macros",
+    "sqlx-sqlite",
+    "sqlx-postgres",
+    "runtime-tokio-rustls",
+    "macros",
 ] }
 
 axum = "0.7.1"
@@ -37,8 +37,11 @@ fluent-templates = { version = "0.8.0", features = ["tera"] }
 unic-langid = "0.9.4"
 # /view engine
 
+# axum session
+axum_session = { version = "0.13", default-features = false }
 # oauth2
-loco-oauth2 = { version="*",path = "../../" }
+loco-oauth2 = { version = "*", path = "../../" }
+time = "0.3"
 
 [[bin]]
 name = "demo-cli"
@@ -50,3 +53,4 @@ serial_test = "2.0.0"
 rstest = "0.18.2"
 loco-rs = { version = "0.3.2", features = ["testing"] }
 insta = { version = "1.34.0", features = ["redactions", "yaml", "filters"] }
+
