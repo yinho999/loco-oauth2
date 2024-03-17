@@ -1,32 +1,20 @@
-+++
-title = "OAuth2"
-description = ""
-date = 2024-02-22T08:00:00+00:00
-updated = 2024-02-22T08:00:00+00:00
-draft = false
-weight = 21
-sort_by = "weight"
-template = "docs/page.html"
+OAuth2 is a protocol that allows a user to grant a third-party web site or application access to the user's protected
+resources, without necessarily revealing their long-term credentials or even their identity. For this to work, the user
+needs to authenticate with the third-party site and grant access to the client application.
 
-[extra]
-lead = ""
-toc = true
-top = false
-flair =[]
-+++
-
-OAuth2 is a protocol that allows a user to grant a third-party web site or application access to the user's protected resources, without necessarily revealing their long-term credentials or even their identity. For this to work, the user needs to authenticate with the third-party site and grant access to the client application.
-
-Loco supports OAuth2 with the `oauth2` feature. Currently Loco supports the Authorization Code Grant. Client Credentials Grant and Implicit Grant are planned for future releases.
+Loco supports OAuth2 with the `oauth2` feature. Currently Loco supports the Authorization Code Grant. Client Credentials
+Grant and Implicit Grant are planned for future releases.
 
 Offical `RFC 6749` OAuth2 documentation can be found [here](https://datatracker.ietf.org/doc/html/rfc6749).\
 Shuttle tutorial can be found [here](https://www.shuttle.rs/blog/2023/08/30/using-oauth-with-axum).
+
 ## Setup
 
 Add the `oauth2` function as a Hook in the `app.rs` file and import the `oauth2` module from `loco_rs`.
 
 ```rust
 use loco_rs::oauth2_store::{oauth2_grant::OAuth2ClientGrantEnum, OAuth2ClientStore};
+
 impl Hooks for App {
     async fn oauth2(
         config: &Config,
@@ -37,9 +25,12 @@ impl Hooks for App {
 }
 ```
 
-This hook returns an `OAuth2ClientStore` instance that holds all OAuth2 configurations and grants, covered in the next sections. This `OAuth2ClientStore` instance is stored as part of the application context and is available in controllers, endpoints, task workers, and more.
+This hook returns an `OAuth2ClientStore` instance that holds all OAuth2 configurations and grants, covered in the next
+sections. This `OAuth2ClientStore` instance is stored as part of the application context and is available in
+controllers, endpoints, task workers, and more.
 
 ## Glossary
+
 |                           |                                                                                                          |
 |---------------------------|----------------------------------------------------------------------------------------------------------|
 | `OAuth2ClientGrantEnum`   | Enum for the different OAuth2 grants, an OAuth2 Client will belong to one of the `OAuth2ClientGrantEnum` |
@@ -50,30 +41,33 @@ This hook returns an `OAuth2ClientStore` instance that holds all OAuth2 configur
 
 OAuth2 Configuration is done in the `config/*.yaml` file. The `oauth2` section is used to configure the OAuth2 clients.
 
-This example is using Google Cloud as the OAuth2 provider. You need a Google Cloud project and create OAuth2 credentials for `client_id` and `client_secret`.  `redirect_url` is the server callback endpoint for the provider which should set within `Authorised redirect URIs` section when creating credentials. 
+This example is using Google Cloud as the OAuth2 provider. You need a Google Cloud project and create OAuth2 credentials
+for `client_id` and `client_secret`.  `redirect_url` is the server callback endpoint for the provider which should set
+within `Authorised redirect URIs` section when creating credentials.
 
 ```yaml
 # OAuth2 Configuration
 oauth2:
- authorization_code: # Authorization code grant type
-  - provider_name: google # Identifier for the OAuth2 provider. Replace 'google' with your provider's name if different.
-    client_credentials:
-      client_id: {{get_env(name="OAUTH_CLIENT_ID", default="oauth_client_id")}} # Replace with your OAuth2 client ID.
-      client_secret: {{get_env(name="OAUTH_CLIENT_SECRET", default="oauth_client_secret")}} # Replace with your OAuth2 client secret.
-    url_config:
-     auth_url: {{get_env(name="AUTH_URL", default="https://accounts.google.com/o/oauth2/auth")}} # authorization endpoint from the provider
-     token_url: {{get_env(name="TOKEN_URL", default="https://www.googleapis.com/oauth2/v3/token")}} # token endpoint from the provider for exchanging the authorization code for an access token
-     redirect_url: {{get_env(name="REDIRECT_URL", default="http://localhost:3000/oauth2/google/callback")}} # server callback endpoint for the provider
-     profile_url: {{get_env(name="PROFILE_URL", default="https://openidconnect.googleapis.com/v1/userinfo")}} # user profile endpoint from the provider for getting user data
-     scopes:
-      - {{get_env(name="SCOPES_1", default="https://www.googleapis.com/auth/userinfo.email")}} # Scopes for requesting access to user data
-      - {{get_env(name="SCOPES_2", default="https://www.googleapis.com/auth/userinfo.profile")}} # Scopes for requesting access to user data
-    cookie_config:
-      protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:3000/oauth2/protected")}} # Optional - For redirecting to protect url in cookie to prevent XSS attack
-    timeout_seconds: 600 # Optional, default 600 seconds
+  authorization_code: # Authorization code grant type
+    - provider_name: google # Identifier for the OAuth2 provider. Replace 'google' with your provider's name if different.
+      client_credentials:
+        client_id: {{get_env(name="OAUTH_CLIENT_ID", default="oauth_client_id")}} # Replace with your OAuth2 client ID.
+        client_secret: {{get_env(name="OAUTH_CLIENT_SECRET", default="oauth_client_secret")}} # Replace with your OAuth2 client secret.
+      url_config:
+        auth_url: {{get_env(name="AUTH_URL", default="https://accounts.google.com/o/oauth2/auth")}} # authorization endpoint from the provider
+        token_url: {{get_env(name="TOKEN_URL", default="https://www.googleapis.com/oauth2/v3/token")}} # token endpoint from the provider for exchanging the authorization code for an access token
+        redirect_url: {{get_env(name="REDIRECT_URL", default="http://localhost:3000/oauth2/google/callback")}} # server callback endpoint for the provider
+        profile_url: {{get_env(name="PROFILE_URL", default="https://openidconnect.googleapis.com/v1/userinfo")}} # user profile endpoint from the provider for getting user data
+        scopes:
+          - {{get_env(name="SCOPES_1", default="https://www.googleapis.com/auth/userinfo.email")}} # Scopes for requesting access to user data
+          - {{get_env(name="SCOPES_2", default="https://www.googleapis.com/auth/userinfo.profile")}} # Scopes for requesting access to user data
+      cookie_config:
+        protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:3000/oauth2/protected")}} # Optional - For redirecting to protect url in cookie to prevent XSS attack
+      timeout_seconds: 600 # Optional, default 600 seconds
 ```
 
 ## Initialize OAuth2 (Authorization Code Grant)
+
 Single OAuth2 Authorization Code Client can be initialized with the following hook in `app.rs`:
 
 ```rust
@@ -113,33 +107,54 @@ async fn oauth2(
     Ok(Some(store))
 }
 ```
+
 ## OAuth2 Flow (Authorization Code Grant)
+
 There are 3 entities involved in the OAuth2 Authorization Code Grant flow:
 
 1. Client - `Application server` which requests access to the user's account on the authorization server.
-2. Resource Owner - `User` who owns the account on the authorization server. In your example, this would be a user with a Google Account.
-3. Authorization Server - `Authorization Server` that hosts the user accounts and can grant access tokens to clients on behalf of the users. In this example, this would be Google Cloud.
+2. Resource Owner - `User` who owns the account on the authorization server. In your example, this would be a user with
+   a Google Account.
+3. Authorization Server - `Authorization Server` that hosts the user accounts and can grant access tokens to clients on
+   behalf of the users. In this example, this would be Google Cloud.
 
 ### Pre-requisite for the Flow:
-`Client Registration`: Before the flow starts, the client (application server) must register with the authorization server. During this registration, the client will typically receive a client_id and client_secret, and will provide the authorization server with one or more redirect_uris. This step is crucial for the authorization server to recognize the client and ensure that the authorization code is sent to the correct callback URL, please set up the callback URL in the `authorization/url_config/redirect_url` field.
+
+`Client Registration`: Before the flow starts, the client (application server) must register with the authorization
+server. During this registration, the client will typically receive a client_id and client_secret, and will provide the
+authorization server with one or more redirect_uris. This step is crucial for the authorization server to recognize the
+client and ensure that the authorization code is sent to the correct callback URL, please set up the callback URL in
+the `authorization/url_config/redirect_url` field.
 
 ### OAuth2 Authorization Code Grant Flow Steps:
 
-1. Authorization Request: The client directs the user (resource owner) to the authorization server's authorization endpoint. This request includes parameters such as the response_type (set to "code" for the authorization code grant), client_id, redirect_uri, scope (which specifies the level of access that the client is requesting), and an optional state parameter (which serves as a CSRF token).
+1. Authorization Request: The client directs the user (resource owner) to the authorization server's authorization
+   endpoint. This request includes parameters such as the response_type (set to "code" for the authorization code
+   grant), client_id, redirect_uri, scope (which specifies the level of access that the client is requesting), and an
+   optional state parameter (which serves as a CSRF token).
 
 
-2. User Authentication and Authorization: The user authenticates with the authorization server and decides whether to grant the requested access to the client. The state parameter, if used, is returned to the client in the redirect URI, helping to prevent CSRF attacks.
+2. User Authentication and Authorization: The user authenticates with the authorization server and decides whether to
+   grant the requested access to the client. The state parameter, if used, is returned to the client in the redirect
+   URI, helping to prevent CSRF attacks.
 
 
-3. Authorization Response: If the user grants access, the authorization server redirects the user-agent back to the client using the redirect_uri provided earlier, appending an authorization code and the original state value. The authorization code is a temporary code that the client will exchange for an access token.
+3. Authorization Response: If the user grants access, the authorization server redirects the user-agent back to the
+   client using the redirect_uri provided earlier, appending an authorization code and the original state value. The
+   authorization code is a temporary code that the client will exchange for an access token.
 
 
-4. Authorization Code Exchange: The client exchanges the authorization code for an access token (and optionally a refresh token) by making a request to the authorization server's token endpoint. This request includes the grant_type (set to "authorization_code"), code (the authorization code), redirect_uri, and client authentication (typically using the client_id and client_secret as basic auth). 
+4. Authorization Code Exchange: The client exchanges the authorization code for an access token (and optionally a
+   refresh token) by making a request to the authorization server's token endpoint. This request includes the
+   grant_type (set to "authorization_code"), code (the authorization code), redirect_uri, and client authentication (
+   typically using the client_id and client_secret as basic auth).
 
 5. Resource Access: The client uses the access token to access resources on the resource server on behalf of the user.
 
 ## Use OAuth2 Example (Authorization Code Grant)
+
 ### Setup OAuth2 Store
+
 ```rust
 // app.rs
 impl Hooks for App {
@@ -177,14 +192,19 @@ impl Hooks for App {
     }
 }
 ```
+
 ### Helper Functions
-Here is some helper functions in controller to get the OAuth2 Authorization Code Client and the OAuth2 Authorization Code Config from the OAuth2 configuration.
+
+Here is some helper functions in controller to get the OAuth2 Authorization Code Client and the OAuth2 Authorization
+Code Config from the OAuth2 configuration.
+
 ```rust
 // controllers/oauth2.rs
 use loco_rs::oauth2_store::{oauth2_grant::OAuth2ClientGrantEnum, OAuth2ClientStore};
 use loco_rs::oauth2_store::grants::authorization_code::AuthorizationCodeGrantTrait;
 use loco_rs::oauth2_store::grants::authorization_code::AuthorizationCodeConfig;
 use loco_rs::Result;
+
 // Helper function to get the OAuth2 Authorization Code Client from the OAuth2ClientStore
 fn get_oauth2_authorization_code_client(
     oauth_store: &Arc<OAuth2ClientStore>,
@@ -202,6 +222,7 @@ fn get_oauth2_authorization_code_client(
         }
     }
 }
+
 // Helper function to get the OAuth2 Authorization Code Config from the OAuth2 configuration
 fn get_oauth2_authorization_code_config(
     oauth_config: Option<Oauth2>,
@@ -217,13 +238,17 @@ fn get_oauth2_authorization_code_config(
     Ok(oauth_config.clone())
 }
 ```
-### OAuth2 Code Flow
-The OAuth2 process requires 2 endpoints and one middleware to be set up in the `controllers` and `controllers/middleware` directories.
 
-Let's start with the authorization endpoint. This endpoint is used to redirect the user to the OAuth2 provider's authorization endpoint. The user will authenticate and authorize the client to access their data.
+### OAuth2 Code Flow
+
+The OAuth2 process requires 2 endpoints and one middleware to be set up in the `controllers`
+and `controllers/middleware` directories.
+
+Let's start with the authorization endpoint. This endpoint is used to redirect the user to the OAuth2 provider's
+authorization endpoint. The user will authenticate and authorize the client to access their data.
 
 1. Authorization URL Endpoint
-    
+
     ```rust
     // controllers/oauth2.rs
     use loco_rs::oauth2_store::{oauth2_grant::OAuth2ClientGrantEnum, OAuth2ClientStore};
@@ -258,13 +283,16 @@ Let's start with the authorization endpoint. This endpoint is used to redirect t
     ```
 2. User authorization on OAuth2 provider's page
 
-    User authorizes on the OAuth2 provider's page and redirect back to the client's redirect URL with the authorization code. (Skip)
+   User authorizes on the OAuth2 provider's page and redirect back to the client's redirect URL with the authorization
+   code. (Skip)
 
 
 3. Callback URL Endpoint + 4. Authorization Code Exchange + 5. Resource Access\
-    The callback URL endpoint is used to exchange the authorization code for an access token and optionally a refresh token and getting the user profile from the `profile_url`. \
-   
-   This endpoint is called by the OAuth2 provider after the user has authenticated and authorized the client. This endpoint should be set in the `redirect_url` field in the `config/*.yaml` file.
+   The callback URL endpoint is used to exchange the authorization code for an access token and optionally a refresh
+   token and getting the user profile from the `profile_url`. \
+
+   This endpoint is called by the OAuth2 provider after the user has authenticated and authorized the client. This
+   endpoint should be set in the `redirect_url` field in the `config/*.yaml` file.
     ```rust
     // controllers/oauth2.rs
     use loco_rs::oauth2_store::{oauth2_grant::OAuth2ClientGrantEnum, OAuth2ClientStore};
@@ -327,7 +355,7 @@ Let's start with the authorization endpoint. This endpoint is used to redirect t
     }
     ```
 
-    Cookie helper function
+   Cookie helper function
     ```rust
     // controllers/middleware/auth.rs
     const COOKIE_NAME: &str = "sid";
@@ -363,10 +391,11 @@ Let's start with the authorization endpoint. This endpoint is used to redirect t
         Ok(jar.add(cookie))
     }
     ```
-   
+
 
 6. Protected URL Endpoint\
-    This will basically be the endpoint that the user will be redirected to after the cookie is set. This endpoint will be used to get the user profile from the OAuth2 provider using the access token from the cookie.
+   This will basically be the endpoint that the user will be redirected to after the cookie is set. This endpoint will
+   be used to get the user profile from the OAuth2 provider using the access token from the cookie.
     ```rust
     // controllers/oauth2.rs
     // GET /oauth2/protected
@@ -376,7 +405,8 @@ Let's start with the authorization endpoint. This endpoint is used to redirect t
     }
     ```
    Cookie middleware \
-   this middleware will be highly depended on the data within the short-lived cookie. In our example we are using the access token to get the user profile from the OAuth2 provider.
+   this middleware will be highly depended on the data within the short-lived cookie. In our example we are using the
+   access token to get the user profile from the OAuth2 provider.
     ```rust
     // controllers/middleware/auth.rs
     // Middleware to get the user profile from the OAuth2 provider using the access token from the cookie
@@ -425,4 +455,5 @@ Let's start with the authorization endpoint. This endpoint is used to redirect t
         }
     }
     ```
+
 Full example can be found [here](). 
