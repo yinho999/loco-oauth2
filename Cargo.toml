@@ -47,5 +47,6 @@ features = [
     "runtime-tokio-rustls", # `ASYNC_RUNTIME` feature
 ]
 [dev-dependencies]
-wiremock = "0.6"
+axum-test = "14.4"
 serde_urlencoded = "0.7.1"
+wiremock = "0.6"

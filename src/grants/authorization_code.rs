@@ -480,7 +480,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_authorization_url() -> Result<(), TestError> {
+    async fn test_get_authorization_url() -> Result<(), TestError> {
         let (mut client, settings) = create_client().await?;
         let (url, csrf_token) = client.get_authorization_url();
         let base_url_with_path = get_base_url_with_path(&url);
@@ -528,15 +528,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn cookie_config() -> Result<(), TestError> {
-        let (client, settings) = create_client().await?;
+    async fn test_cookie_config() -> Result<(), TestError> {
+        let (client, _) = create_client().await?;
         let cookie_config = client.get_cookie_config();
         assert_eq!(cookie_config.protected_url, None);
         Ok(())
     }
 
     #[tokio::test]
-    async fn exchange_code() -> Result<(), TestError> {
+    async fn test_exchange_code() -> Result<(), TestError> {
         let (mut client, settings) = create_client().await?;
         let token_form_body = vec![
             serde_urlencoded::to_string([("code", &settings.code)])?,
