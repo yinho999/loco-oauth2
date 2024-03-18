@@ -1,5 +1,9 @@
+use async_trait::async_trait;
 use chrono::Local;
-use loco_oauth2::{basic::BasicTokenResponse, TokenResponse};
+use loco_oauth2::{
+    basic::BasicTokenResponse, controllers::models::oauth2_sessions::OAuth2SessionsTrait,
+    TokenResponse,
+};
 use loco_rs::model::{ModelError, ModelResult};
 use sea_orm::{entity::prelude::*, ActiveValue, TransactionTrait};
 
@@ -9,7 +13,27 @@ use crate::models::users;
 impl ActiveModelBehavior for ActiveModel {
     // extend activemodel below (keep comment for generators)
 }
-impl super::_entities::o_auth2_sessions::Model {
+
+#[async_trait]
+impl OAuth2SessionsTrait<users::Model> for Model {
+    /// Check if a session is expired from the database
+    ///
+    /// # Arguments
+    /// db: &`DatabaseConnection` - Database connection
+    /// session_id: &str - Session id
+    /// # Returns
+    /// A boolean
+    /// # Errors
+    /// Returns a `ModelError` if the session is not found
+    async fn is_expired(db: &DatabaseConnection, session_id: &str) -> ModelResult<bool> {
+        let oauth2_session = o_auth2_sessions::Entity::find()
+            .filter(o_auth2_sessions::Column::SessionId.eq(session_id))
+            .one(db)
+            .await?
+            .ok_or_else(|| ModelError::EntityNotFound)?;
+        Ok(oauth2_session.expires_at < Local::now().naive_local())
+    }
+
     /// Upsert a session with OAuth
     ///
     /// # Arguments
@@ -20,7 +44,7 @@ impl super::_entities::o_auth2_sessions::Model {
     /// A session
     /// # Errors
     /// Returns a `ModelError` if the session cannot be upserted
-    pub async fn upsert_with_oauth(
+    async fn upsert_with_oauth2(
         db: &DatabaseConnection,
         token: &BasicTokenResponse,
         user: &users::Model,
@@ -57,23 +81,5 @@ impl super::_entities::o_auth2_sessions::Model {
         };
         txn.commit().await?;
         Ok(oauth2_session)
-    }
-
-    /// Check if a session is expired from the database
-    ///
-    /// # Arguments
-    /// db: &`DatabaseConnection` - Database connection
-    /// session_id: &str - Session id
-    /// # Returns
-    /// A boolean
-    /// # Errors
-    /// Returns a `ModelError` if the session is not found
-    pub async fn is_expired(db: &DatabaseConnection, session_id: &str) -> ModelResult<bool> {
-        let oauth2_session = o_auth2_sessions::Entity::find()
-            .filter(o_auth2_sessions::Column::SessionId.eq(session_id))
-            .one(db)
-            .await?
-            .ok_or_else(|| ModelError::EntityNotFound)?;
-        Ok(oauth2_session.expires_at < Local::now().naive_local())
     }
 }

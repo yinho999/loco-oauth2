@@ -43,21 +43,21 @@ pub struct AuthorizationCodeCookieConfig {
 /// [`AuthorizationCodeClient`] that acts as a client for the Authorization Code
 /// Grant flow.
 pub struct AuthorizationCodeClient {
-    /// [`BasicClient`] instance for the OAuth2 client.
+    /// [`BasicClient`] instance for the `OAuth2` client.
     pub oauth2: BasicClient,
-    /// [`Url`] instance for the OAuth2 client's profile URL.
+    /// [`Url`] instance for the `OAuth2` client's profile URL.
     pub profile_url: url::Url,
-    /// [`reqwest::Client`] instance for the OAuth2 client's HTTP client.
+    /// [`reqwest::Client`] instance for the `OAuth2` client's HTTP client.
     pub http_client: reqwest::Client,
     /// A flow states hashMap <CSRF Token, (PKCE Code Verifier, Created time)>
     /// for managing the expiration of the CSRF tokens and PKCE code verifiers.
     pub flow_states: HashMap<String, (PkceCodeVerifier, Instant)>,
     /// A vector of [`Scope`] for the getting the user's profile.
     pub scopes: Vec<Scope>,
-    /// A [`std::time::Duration`] for the OAuth2 client's CSRF token timeout
+    /// A [`std::time::Duration`] for the `OAuth2` client's CSRF token timeout
     /// which defaults to 10 minutes (600s).
     pub csrf_token_timeout: std::time::Duration,
-    /// An optional [`AuthorizationCodeCookieConfig`] for the OAuth2 client's
+    /// An optional [`AuthorizationCodeCookieConfig`] for the `OAuth2` client's
     /// cookie during middleware
     pub cookie_config: AuthorizationCodeCookieConfig,
 }

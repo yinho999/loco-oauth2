@@ -5,12 +5,14 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 pub mod config;
+pub mod controllers;
 pub mod error;
 pub mod grants;
 pub mod middleware;
 pub mod migration;
 pub mod oauth2_grant;
 
+const COOKIE_NAME: &str = "sid";
 use crate::config::OAuth2Config;
 use crate::error::{OAuth2ClientResult, OAuth2StoreError, OAuth2StoreResult};
 use crate::grants::authorization_code::{AuthorizationCodeClient, AuthorizationCodeGrantTrait};

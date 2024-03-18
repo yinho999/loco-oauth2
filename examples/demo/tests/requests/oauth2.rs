@@ -155,7 +155,7 @@ async fn test_settings() {
 
 #[tokio::test]
 #[serial]
-async fn can_authorization_url() -> Result<(), Box<dyn std::error::Error>> {
+async fn can_google_authorization_url() -> Result<(), Box<dyn std::error::Error>> {
     let settings = set_default_url().await;
     let assert_html = vec![
         settings.auth_url.clone(),
@@ -167,7 +167,7 @@ async fn can_authorization_url() -> Result<(), Box<dyn std::error::Error>> {
 
     testing::request::<App, _, _>(|request, ctx| async move {
         // Test the authorization url
-        let res = request.get("/api/oauth2").await;
+        let res = request.get("/api/oauth2/google").await;
         assert_eq!(res.status_code(), 200);
         for url in assert_html {
             assert!(res.text().contains(&url));
@@ -185,7 +185,7 @@ async fn can_call_google_callback() -> Result<(), Box<dyn std::error::Error>> {
     mock_oauth_server(&settings, true).await?;
     testing::request::<App, _, _>(|request, ctx| async move {
         // Get the authorization url from the server
-        let auth_res = request.get("/api/oauth2").await;
+        let auth_res = request.get("/api/oauth2/google").await;
         // Cookie for csrf token
         let auth_cookie = auth_res.cookies();
         // Get the authorization url from the response HTML
@@ -227,7 +227,7 @@ async fn can_call_protect() -> Result<(), Box<dyn std::error::Error>> {
     mock_oauth_server(&settings, true).await?;
     testing::request::<App, _, _>(|request, ctx| async move {
         // Get the authorization url from the server
-        let auth_res = request.get("/api/oauth2").await;
+        let auth_res = request.get("/api/oauth2/google").await;
         // Cookie for csrf token
         let auth_cookie = auth_res.cookies();
         // Get the authorization url from the response HTML
@@ -278,7 +278,7 @@ async fn cannot_call_callback_twice_with_same_csrf_token() -> Result<(), Box<dyn
     mock_oauth_server(&settings, true).await?;
     testing::request::<App, _, _>(|request, ctx| async move {
         // Get the authorization url from the server
-        let auth_res = request.get("/api/oauth2").await;
+        let auth_res = request.get("/api/oauth2/google").await;
         // Cookie for csrf token
         let auth_cookie = auth_res.cookies();
         // Get the authorization url from the response HTML

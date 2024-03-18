@@ -1,19 +1,22 @@
-use crate::OAuth2ClientStore;
+use crate::grants::authorization_code::AuthorizationCodeCookieConfig;
+use crate::{url, OAuth2ClientStore, COOKIE_NAME};
 use async_trait::async_trait;
 use axum::response::{IntoResponse, IntoResponseParts, ResponseParts};
 use axum::{
     extract::{FromRef, FromRequestParts},
-    http::{request::Parts, StatusCode},
+    http::request::Parts,
     response::Response,
     Extension, RequestPartsExt,
 };
 use axum_extra::extract;
-use axum_extra::extract::PrivateCookieJar;
 use cookie::{Cookie, Key};
 use http::HeaderMap;
 use loco_rs::prelude::AppContext;
+use oauth2::basic::BasicTokenResponse;
+use oauth2::TokenResponse;
 use std::convert::Infallible;
 
+#[derive(Clone)]
 pub struct OAuth2PrivateCookieJar(extract::cookie::PrivateCookieJar);
 
 impl IntoResponse for OAuth2PrivateCookieJar {
@@ -58,6 +61,62 @@ impl OAuth2PrivateCookieJar {
         self.0.decrypt(cookie)
     }
 }
+#[async_trait]
+pub trait OAuth2PrivateCookieJarTrait: Clone {
+    /// Create a short live cookie with the token response
+    ///
+    /// # Arguments
+    /// config - The authorization code config with the oauth2 authorization code
+    /// grant configuration token - The token response from the oauth2 authorization
+    /// code grant jar - The private cookie jar
+    ///
+    /// # Returns
+    /// A result with the private cookie jar
+    ///
+    /// # Errors
+    /// When url parsing fails
+    fn create_short_live_cookie_with_token_response(
+        config: &AuthorizationCodeCookieConfig,
+        token: &BasicTokenResponse,
+        jar: Self,
+    ) -> loco_rs::prelude::Result<Self>;
+}
+
+impl OAuth2PrivateCookieJarTrait for OAuth2PrivateCookieJar {
+    fn create_short_live_cookie_with_token_response(
+        config: &AuthorizationCodeCookieConfig,
+        token: &BasicTokenResponse,
+        jar: Self,
+    ) -> loco_rs::prelude::Result<Self> {
+        // Set the cookie
+        let secs: i64 = token
+            .expires_in()
+            .unwrap_or(std::time::Duration::new(0, 0))
+            .as_secs()
+            .try_into()
+            .map_err(|_e| loco_rs::errors::Error::InternalServerError)?;
+        // domain
+        let protected_url = config
+            .protected_url
+            .clone()
+            .unwrap_or_else(|| "http://localhost:3000/oauth2/protected".to_string());
+        let protected_url = url::Url::parse(&protected_url)
+            .map_err(|_e| loco_rs::errors::Error::InternalServerError)?;
+        let protected_domain = protected_url.domain().unwrap_or("localhost");
+        let protected_path = protected_url.path();
+        // Create the cookie with the session id, domain, path, and secure flag from
+        // the token and profile
+        let cookie = cookie::Cookie::build((COOKIE_NAME, token.access_token().secret().to_owned()))
+            .domain(protected_domain.to_owned())
+            .path(protected_path.to_owned())
+            // secure flag is for https - https://datatracker.ietf.org/doc/html/rfc6749#section-3.1.2.1
+            .secure(true)
+            // Restrict access in the client side code to prevent XSS attacks
+            .http_only(true)
+            .max_age(time::Duration::seconds(secs));
+        Ok(jar.add(cookie))
+    }
+}
 
 #[async_trait]
 impl<S> FromRequestParts<S> for OAuth2PrivateCookieJar
@@ -82,8 +141,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::http::StatusCode;
     use axum::routing::get;
     use axum::Router;
+    use axum_extra::extract::PrivateCookieJar;
     use axum_test::TestServer;
     use http::header::{HeaderValue, COOKIE};
     use loco_rs::config::{Config, Database, Middlewares, Server};

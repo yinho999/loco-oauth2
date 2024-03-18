@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use chrono::offset::Local;
+use loco_oauth2::controllers::models::users::OAuth2UserTrait;
 use loco_rs::{
     auth, hash,
     model::{Authenticable, ModelError, ModelResult},
@@ -358,5 +359,27 @@ impl super::_entities::users::ActiveModel {
         self.password =
             ActiveValue::set(hash::hash_password(password).map_err(|e| ModelError::Any(e.into()))?);
         Ok(self.update(db).await?)
+    }
+}
+
+#[async_trait]
+impl OAuth2UserTrait<OAuth2UserProfile> for Model {
+    /// find a user by the session id
+    ///
+    /// # Errors
+    ///
+    /// When could not find user by the given session id or DB query error
+    async fn find_by_oauth2_session_id(
+        db: &DatabaseConnection,
+        session_id: &str,
+    ) -> ModelResult<Self> {
+        Model::find_by_oauth2_session_id(db, session_id).await
+    }
+
+    async fn upsert_with_oauth(
+        db: &DatabaseConnection,
+        profile: &OAuth2UserProfile,
+    ) -> ModelResult<Self> {
+        Model::upsert_with_oauth(db, profile).await
     }
 }

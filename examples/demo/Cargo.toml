@@ -38,7 +38,7 @@ unic-langid = "0.9.4"
 # /view engine
 
 # axum session
-axum_session = { version = "0.13", default-features = false }
+axum_session = { version = "0.13" }
 # oauth2
 loco-oauth2 = { version = "*", path = "../../" }
 time = "0.3"
