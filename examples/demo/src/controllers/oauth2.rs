@@ -117,7 +117,7 @@ async fn protected(user: OAuth2CookieUser) -> Result<impl IntoResponse> {
 
 pub fn routes() -> Routes {
     Routes::new()
-        .prefix("oauth2")
+        .prefix("api/oauth2")
         .add("/", get(authorization_url))
         .add("/google/callback", get(google_callback))
         .add("/protected", get(protected))

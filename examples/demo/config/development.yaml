@@ -15,13 +15,13 @@ settings:
         url_config:
           auth_url: {{get_env(name="AUTH_URL", default="https://accounts.google.com/o/oauth2/auth")}} # authorization endpoint from the provider
           token_url: {{get_env(name="TOKEN_URL", default="https://www.googleapis.com/oauth2/v3/token")}} # token endpoint from the provider for exchanging the authorization code for an access token
-          redirect_url: {{get_env(name="REDIRECT_URL", default="http://localhost:3000/oauth2/google/callback")}} # server callback endpoint for the provider
+          redirect_url: {{get_env(name="REDIRECT_URL", default="http://localhost:3000/api/oauth2/google/callback")}} # server callback endpoint for the provider
           profile_url: {{get_env(name="PROFILE_URL", default="https://openidconnect.googleapis.com/v1/userinfo")}} # user profile endpoint from the provider for getting user data
           scopes:
             - {{get_env(name="SCOPES_1", default="https://www.googleapis.com/auth/userinfo.email")}} # Scopes for requesting access to user data
             - {{get_env(name="SCOPES_2", default="https://www.googleapis.com/auth/userinfo.profile")}} # Scopes for requesting access to user data
         cookie_config:
-          protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:3000/oauth2/protected")}} # Optional - For redirecting to protect url in cookie to prevent XSS attack
+          protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:3000/api/oauth2/protected")}} # Optional - For redirecting to protect url in cookie to prevent XSS attack
         timeout_seconds: 600 # Optional, default 600 seconds
 # Application logging configuration
 logger:
@@ -119,7 +119,7 @@ mailer:
     # Enable/Disable smtp mailer.
     enable: true
     # SMTP server host. e.x localhost, smtp.gmail.com
-    host: {{ get_env(name="MAILER_HOST", default="localhost") }}
+    host: {{get_env(name="MAILER_HOST", default="localhost")}}
     # SMTP server port
     port: 1025
     # Use secure connection (SSL/TLS).
@@ -131,7 +131,7 @@ mailer:
 # Database Configuration
 database:
   # Database connection URI
-  uri: {{ get_env(name="DATABASE_URL", default="postgres://loco:loco@localhost:5432/demo_development") }}
+  uri: {{get_env(name="DATABASE_URL", default="postgres://loco:loco@localhost:5432/demo_development")}}
   # When enabled, the sql query will be logged.
   enable_logging: false
   # Set the timeout duration when acquiring a connection.
@@ -152,7 +152,7 @@ database:
 # Redis Configuration
 redis:
   # Redis connection URI
-  uri: {{ get_env(name="REDIS_URL", default="redis://127.0.0.1") }}
+  uri: {{get_env(name="REDIS_URL", default="redis://127.0.0.1")}}
   # Dangerously flush all data in Redis on startup. dangerous operation, make sure that you using this flag only on dev environments or test mode
   dangerously_flush: false
 
