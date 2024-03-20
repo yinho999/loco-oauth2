@@ -16,6 +16,9 @@ use oauth2::basic::BasicTokenResponse;
 use oauth2::TokenResponse;
 use std::convert::Infallible;
 
+/// `OAuth2 private cookie jar` for storing `OAuth2` cookies
+/// `OAuth2PrivateCookieJar` struct is a wrapper around `PrivateCookieJar` from `axum` crate
+/// # Fields
 #[derive(Clone)]
 pub struct OAuth2PrivateCookieJar(extract::cookie::PrivateCookieJar);
 
@@ -39,17 +42,21 @@ impl AsMut<extract::cookie::PrivateCookieJar> for OAuth2PrivateCookieJar {
 }
 
 impl OAuth2PrivateCookieJar {
+    #[must_use]
     pub fn add<C: Into<Cookie<'static>>>(mut self, cookie: C) -> Self {
         Self(self.0.add(cookie.into()))
     }
+    #[must_use]
     pub fn from_headers(headers: &HeaderMap, key: Key) -> Self {
         Self(extract::cookie::PrivateCookieJar::from_headers(
             headers, key,
         ))
     }
+    #[must_use]
     pub fn get(&self, name: &str) -> Option<Cookie<'static>> {
         self.0.get(name)
     }
+    #[must_use]
     pub fn remove<C: Into<Cookie<'static>>>(mut self, cookie: C) -> Self {
         Self(self.0.remove(cookie.into()))
     }
@@ -57,6 +64,7 @@ impl OAuth2PrivateCookieJar {
         self.0.iter()
     }
 
+    #[must_use]
     pub fn decrypt(&self, cookie: Cookie<'static>) -> Option<Cookie<'static>> {
         self.0.decrypt(cookie)
     }
@@ -66,15 +74,13 @@ pub trait OAuth2PrivateCookieJarTrait: Clone {
     /// Create a short live cookie with the token response
     ///
     /// # Arguments
-    /// config - The authorization code config with the oauth2 authorization code
-    /// grant configuration token - The token response from the oauth2 authorization
-    /// code grant jar - The private cookie jar
-    ///
+    /// * `config` - `AuthorizationCodeCookieConfig` - The cookie configuration
+    /// * `token` - `BasicTokenResponse` - The token response
+    /// * `jar` - `OAuth2PrivateCookieJar` - The cookie jar
     /// # Returns
-    /// A result with the private cookie jar
-    ///
+    /// * `OAuth2PrivateCookieJar` - The cookie jar with the added cookie
     /// # Errors
-    /// When url parsing fails
+    /// * `Error` - When the cookie cannot be created
     fn create_short_live_cookie_with_token_response(
         config: &AuthorizationCodeCookieConfig,
         token: &BasicTokenResponse,

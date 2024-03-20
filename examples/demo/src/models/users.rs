@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::offset::Local;
-use loco_oauth2::controllers::models::users::OAuth2UserTrait;
+use loco_oauth2::models::users::OAuth2UserTrait;
 use loco_rs::{
     auth, hash,
     model::{Authenticable, ModelError, ModelResult},
@@ -227,12 +227,7 @@ impl super::_entities::users::Model {
 
         Ok(user)
     }
-    /// Asynchronously creates user with OAuth data and saves it to the
-    /// database.
-    ///
-    /// # Errors
-    ///
-    /// When could not save the user into the DB
+
     pub async fn upsert_with_oauth(
         db: &DatabaseConnection,
         profile: &OAuth2UserProfile,
@@ -364,18 +359,34 @@ impl super::_entities::users::ActiveModel {
 
 #[async_trait]
 impl OAuth2UserTrait<OAuth2UserProfile> for Model {
-    /// find a user by the session id
+    /// Asynchronously finds user by OAuth2 session id.
+    /// # Arguments
+    /// * `db` - Database connection
+    /// * `cookie` - OAuth2 session id
+    ///
+    /// # Returns
+    /// * `Self` - The `OAuth2UserTrait` struct
     ///
     /// # Errors
-    ///
-    /// When could not find user by the given session id or DB query error
+    /// * `ModelError` - When could not find the user in the DB
     async fn find_by_oauth2_session_id(
         db: &DatabaseConnection,
         session_id: &str,
     ) -> ModelResult<Self> {
         Model::find_by_oauth2_session_id(db, session_id).await
     }
-
+    /// Asynchronously upsert user with OAuth data and saves it to the
+    /// database.
+    /// # Arguments
+    /// * `db` - Database connection
+    /// * `profile` - OAuth profile
+    ///
+    /// # Returns
+    /// * `Self` - The `OAuth2UserTrait` struct
+    ///
+    /// # Errors
+    ///
+    /// When could not save the user into the DB
     async fn upsert_with_oauth(
         db: &DatabaseConnection,
         profile: &OAuth2UserProfile,

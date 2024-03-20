@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use chrono::Local;
 use loco_oauth2::{
-    basic::BasicTokenResponse, controllers::models::oauth2_sessions::OAuth2SessionsTrait,
-    TokenResponse,
+    basic::BasicTokenResponse, models::oauth2_sessions::OAuth2SessionsTrait, TokenResponse,
 };
 use loco_rs::model::{ModelError, ModelResult};
 use sea_orm::{entity::prelude::*, ActiveValue, TransactionTrait};

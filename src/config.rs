@@ -2,15 +2,21 @@ use crate::error::OAuth2StoreError;
 use crate::grants::authorization_code::{
     AuthorizationCodeCookieConfig, AuthorizationCodeCredentials, AuthorizationCodeUrlConfig,
 };
+use serde::de::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::str::FromStr;
 
-/// OAuth2 Authentication configuration
+/// `OAuth2 Authentication configuration`
+/// # Fields
+/// * `secret_key` - Optional, key for Private Cookie Jar, must be more than 64 bytes. If not provided, a new key will be generated.
+/// * `authorization_code` - Authorization code grant type
 ///
 /// Example (development):
 /// ```yaml
 /// # config/development.yaml
 /// oauth2:
+///  secret_key: {{get_env(name="OAUTH_PRIVATE_KEY", default="144, 76, 183, 1, 15, 184, 233, 174, 214, 251, 190, 186, 122, 61, 74, 84, 225, 110, 189, 115, 10, 251, 133, 128, 52, 46, 15, 66, 85, 1, 245, 73, 27, 113, 189, 15, 209, 205, 61, 100, 73, 31, 18, 58, 235, 105, 141, 36, 70, 92, 231, 151, 27, 32, 243, 117, 30, 244, 110, 89, 233, 196, 137, 130")}} # Optional, key for Private Cookie Jar, must be more than 64 bytes. If not provided, a new key will be generated.
 ///  authorization_code: # Authorization code grant type
 ///   - client_identifier: google # Identifier for the OAuth2 provider. Replace 'google' with your provider's name if different, must be unique within the oauth2 config.
 ///     client_credentials:
@@ -29,6 +35,7 @@ use serde_json::Value;
 /// ```
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct OAuth2Config {
+    pub secret_key: Option<Vec<u8>>,
     pub authorization_code: Vec<AuthorizationCodeConfig>,
 }
 
@@ -45,7 +52,27 @@ impl TryFrom<Value> for OAuth2Config {
     type Error = OAuth2StoreError;
     #[tracing::instrument(name = "Convert Value to OAuth2Config")]
     fn try_from(value: Value) -> Result<Self, Self::Error> {
-        let config: OAuth2Config = serde_json::from_value(value)?;
-        Ok(config)
+        let secret_key: Option<Vec<u8>> =
+            value.get("secret_key").and_then(|v| v.as_str()).map(|s| {
+                s.split(", ")
+                    .filter_map(|byte| u8::from_str(byte.trim()).ok())
+                    .collect()
+            });
+
+        let authorization_code: Vec<AuthorizationCodeConfig> = value
+            .get("authorization_code")
+            .and_then(|v| v.as_array())
+            .ok_or_else(|| {
+                serde_json::Error::custom("authorization_code is not an array or is missing")
+            })
+            .and_then(|v| {
+                v.iter()
+                    .map(|item| serde_json::from_value(item.clone()))
+                    .collect()
+            })?;
+        Ok(Self {
+            secret_key,
+            authorization_code,
+        })
     }
 }

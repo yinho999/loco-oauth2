@@ -1,6 +1,7 @@
-use crate::controllers::models::oauth2_sessions::OAuth2SessionsTrait;
-use crate::controllers::models::users::OAuth2UserTrait;
-use crate::{middleware::OAuth2PrivateCookieJar, OAuth2ClientStore, COOKIE_NAME};
+use crate::controllers::middleware::OAuth2PrivateCookieJar;
+use crate::models::oauth2_sessions::OAuth2SessionsTrait;
+use crate::models::users::OAuth2UserTrait;
+use crate::{OAuth2ClientStore, COOKIE_NAME};
 use async_trait::async_trait;
 use axum::{
     extract::{FromRef, FromRequestParts},
@@ -14,8 +15,13 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
-// Define a struct to represent user from session information serialized
-// to/from JSON
+/// Define a struct to represent user from session information serialized
+/// to/from JSON
+/// `OAuth2CookieUser` struct
+/// # Generics
+/// * `T` - The type of the `OAuth2` user details received from the `OAuthProvider` scopes, must implement `DeserializeOwned`
+/// * `U` - The type of the user, must implement `OAuth2UserTrait<T>` and `ModelTrait`
+/// * `V` - The type of the session, must implement `OAuth2SessionsTrait<U>` and `ModelTrait`
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OAuth2CookieUser<
     T: DeserializeOwned,
@@ -23,7 +29,9 @@ pub struct OAuth2CookieUser<
     V: OAuth2SessionsTrait<U> + ModelTrait,
 > {
     pub user: U,
+    /// Marker to hold the type of the user details received from `OAuthProvider` scopes
     _marker: PhantomData<T>,
+    /// Marker to hold the type of the session
     _marker2: PhantomData<V>,
 }
 
@@ -43,6 +51,13 @@ where
     U: OAuth2UserTrait<T> + ModelTrait,
     V: OAuth2SessionsTrait<U> + ModelTrait,
 {
+    /// Validate the session and retrieve the user
+    /// Returns the user if the session is valid
+    /// # Arguments
+    /// * `db` - Database connection
+    /// * `cookie` - `OAuth2` session id
+    /// # Returns
+    /// * `U` - The user
     async fn validate_session_and_retrieve_user(
         db: &DatabaseConnection,
         cookie: &str,
@@ -63,7 +78,7 @@ where
     }
 }
 
-// Implement the FromRequestParts trait for the OAuthCookieUser struct
+/// Implement the FromRequestParts trait for the OAuthCookieUser struct to construct a user from a request using middleware
 #[async_trait]
 impl<S, T, U, V> FromRequestParts<S> for OAuth2CookieUser<T, U, V>
 where
@@ -93,13 +108,12 @@ where
                 tracing::info!("Cannot get cookie");
                 (StatusCode::UNAUTHORIZED, "Unauthorized!".to_string()).into_response()
             })?;
-        let user =
-            OAuth2CookieUser::<T, U, V>::validate_session_and_retrieve_user(&state.db, &cookie)
-                .await
-                .map_err(|e| {
-                    tracing::info!("Cannot validate session");
-                    (StatusCode::UNAUTHORIZED, e.to_string()).into_response()
-                })?;
+        let user = Self::validate_session_and_retrieve_user(&state.db, &cookie)
+            .await
+            .map_err(|e| {
+                tracing::info!("Cannot validate session");
+                (StatusCode::UNAUTHORIZED, e.to_string()).into_response()
+            })?;
         Ok(Self {
             user,
             _marker: PhantomData,

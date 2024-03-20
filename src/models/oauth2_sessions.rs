@@ -3,6 +3,9 @@ use loco_rs::prelude::*;
 use oauth2::basic::BasicTokenResponse;
 use sea_orm::DatabaseConnection;
 
+/// Trait for OAuth2 sessions.
+/// # Generic
+/// * `T` - Should implement `OAuth2UserTrait` to be able to upsert a session with OAuth2.
 #[async_trait]
 pub trait OAuth2SessionsTrait<T>: Clone {
     /// Check if a session is expired from the database

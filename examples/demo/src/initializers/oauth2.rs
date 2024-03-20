@@ -24,7 +24,7 @@ impl Initializer for OAuth2StoreInitializer {
             Error::Message("could not convert oauth2 config".to_string())
         })?;
 
-        let oauth2_store = OAuth2ClientStore::new(oauth2_config, None).map_err(|e| {
+        let oauth2_store = OAuth2ClientStore::new(oauth2_config).map_err(|e| {
             tracing::error!(error = ?e, "could not create oauth2 store");
             Error::Message("could not create oauth2 store".to_string())
         })?;

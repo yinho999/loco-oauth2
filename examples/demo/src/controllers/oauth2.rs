@@ -2,7 +2,7 @@
 
 use axum_session::SessionNullPool;
 use loco_oauth2::controllers::{
-    middleware::auth::OAuth2CookieUser,
+    middleware::OAuth2CookieUser,
     oauth2::{google_authorization_url, google_callback},
 };
 use loco_rs::prelude::*;

@@ -1,6 +1,6 @@
 #![allow(clippy::unused_async)]
 
-use crate::{middleware::OAuth2PrivateCookieJar, OAuth2ClientStore};
+use crate::OAuth2ClientStore;
 use axum::{extract::Query, response::Redirect, Extension};
 use axum_session::{DatabasePool, Session};
 use loco_rs::prelude::*;
@@ -9,11 +9,11 @@ use serde::Deserialize;
 use std::fmt::Debug;
 use tokio::sync::MutexGuard;
 
-use crate::controllers::middleware::auth::OAuth2CookieUser;
-use crate::controllers::models::oauth2_sessions::OAuth2SessionsTrait;
-use crate::controllers::models::users::OAuth2UserTrait;
+use crate::controllers::middleware::OAuth2PrivateCookieJarTrait;
+use crate::controllers::middleware::{OAuth2CookieUser, OAuth2PrivateCookieJar};
 use crate::grants::authorization_code::AuthorizationCodeGrantTrait;
-use crate::middleware::OAuth2PrivateCookieJarTrait;
+use crate::models::oauth2_sessions::OAuth2SessionsTrait;
+use crate::models::users::OAuth2UserTrait;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthParams {
@@ -112,6 +112,8 @@ pub async fn callback<
 /// The authorization URL for the `OAuth2` flow
 /// This will redirect the user to the `OAuth2` provider's login page
 /// and then to the callback URL
+/// # Generics
+/// * `T` - The database pool
 /// # Arguments
 /// * `session` - The axum session
 /// * `oauth_store` - The `OAuth2ClientStore` extension

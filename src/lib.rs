@@ -10,6 +10,7 @@ pub mod error;
 pub mod grants;
 pub mod middleware;
 pub mod migration;
+pub mod models;
 pub mod oauth2_grant;
 
 const COOKIE_NAME: &str = "sid";
@@ -28,16 +29,15 @@ pub struct OAuth2ClientStore {
 impl OAuth2ClientStore {
     /// Create a new instance of `OAuth2ClientStore`.
     /// # Arguments
-    /// * `config` - An instance of `OAuth2Config` that holds the OAuth2 configuration.
-    /// * `key` - An optional slice of bytes that holds the security key for the private cookie jar.
+    /// * `config` - An instance of `OAuth2Config` that holds the `OAuth2` configuration.
     /// # Returns
     /// * `OAuth2StoreResult<Self>` - A result that holds the `OAuth2ClientStore` if successful, otherwise an `OAuth2StoreError`.
     #[must_use]
-    pub fn new(config: OAuth2Config, key: Option<&[u8]>) -> OAuth2StoreResult<Self> {
+    pub fn new(config: OAuth2Config) -> OAuth2StoreResult<Self> {
         let mut clients = BTreeMap::new();
         Self::insert_authorization_code_clients(&mut clients, config.authorization_code)?;
-        let key = match key {
-            Some(key) => Key::try_from(key)?,
+        let key = match config.secret_key {
+            Some(key) => Key::try_from(&key[..])?,
             None => Key::generate(),
         };
         Ok(Self { clients, key })
@@ -96,15 +96,15 @@ impl OAuth2ClientStore {
     #[tracing::instrument(name = "Get Authorization Code Grant client", skip(self))]
     pub async fn get_authorization_code_client<T: AsRef<str> + std::fmt::Debug>(
         &self,
-        id: T,
+        client_identifier: T,
     ) -> OAuth2StoreResult<MutexGuard<dyn AuthorizationCodeGrantTrait>> {
-        match self.get(&id) {
+        match self.get(&client_identifier) {
             Some(OAuth2ClientGrantEnum::AuthorizationCode(client)) => {
                 let client = client.lock().await;
                 Ok(client)
             }
             Some(client) => Err(OAuth2StoreError::ClientTypeMismatch(
-                id.as_ref().to_string(),
+                client_identifier.as_ref().to_string(),
                 client.clone(),
             )),
             None => Err(OAuth2StoreError::ClientNotFound),
