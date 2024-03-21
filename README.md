@@ -73,7 +73,7 @@ the provider which should set within `Authorised redirect URIs` section when cre
 settings:
   # OAuth2 Configuration
   oauth2:
-    secret_key: {{get_env(name="OAUTH_PRIVATE_KEY", default="144, 76, 183, 1, 15, 184, 233, 174, 214, 251, 190, 186, 122, 61, 74, 84, 225, 110, 189, 115, 10, 251, 133, 128, 52, 46, 15, 66, 85, 1, 245, 73, 27, 113, 189, 15, 209, 205, 61, 100, 73, 31, 18, 58, 235, 105, 141, 36, 70, 92, 231, 151, 27, 32, 243, 117, 30, 244, 110, 89, 233, 196, 137, 130")}} # Optional, key for Private Cookie Jar, must be more than 64 bytes. Generate using `openssl rand -base64 64`
+    secret_key: {{get_env(name="OAUTH_PRIVATE_KEY", default="144, 76, 183, 1, 15, 184, 233, 174, 214, 251, 190, 186, 122, 61, 74, 84, 225, 110, 189, 115, 10, 251, 133, 128, 52, 46, 15, 66, 85, 1, 245, 73, 27, 113, 189, 15, 209, 205, 61, 100, 73, 31, 18, 58, 235, 105, 141, 36, 70, 92, 231, 151, 27, 32, 243, 117, 30, 244, 110, 89, 233, 196, 137, 130")}} # Optional, key for Private Cookie Jar, must be more than 64 bytes. Auto-generated if not provided
     authorization_code: # Authorization code grant type
       - client_identifier: google # Identifier for the OAuth2 provider. Replace 'google' with your provider's name if different, must be unique within the oauth2 config.
         client_credentials:
@@ -90,6 +90,32 @@ settings:
         cookie_config:
           protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:3000/api/oauth2/protected")}} # Optional - For redirecting to protect url in cookie to prevent XSS attack
         timeout_seconds: 600 # Optional, default 600 seconds
+```
+
+### Generate a private cookie secret key
+
+secret_key is used to encrypt the private cookie jar. It must be more than 64 bytes. If not provided, it will be
+auto-generated.
+Here is an example of how to generate a private cookie secret key.
+
+```rust
+use axum_extra::extract::cookie::Key;
+use rand::{Rng, thread_rng};
+
+fn main() {
+    // Generate a cryptographically random key of 64 bytes
+    let mut rng = thread_rng();
+    let mut random_key = [0u8; 64];
+    rng.fill(&mut random_key);
+    match Key::try_from(&random_key[..]) {
+        Ok(key) => {
+            println!("Random key: {:?}", key.master());
+        }
+        Err(e) => {
+            println!("Error: {:?}", e);
+        }
+    }
+}
 ```
 
 <a name="initialization"></a>
