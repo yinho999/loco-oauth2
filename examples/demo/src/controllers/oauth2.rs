@@ -7,13 +7,23 @@ use loco_oauth2::controllers::{
 };
 use loco_rs::prelude::*;
 
-use crate::models::{o_auth2_sessions, users, users::OAuth2UserProfile};
+use crate::{
+    models::{o_auth2_sessions, users, users::OAuth2UserProfile},
+    views::auth::LoginResponse,
+};
 
 async fn protected(
+    State(ctx): State<AppContext>,
     user: OAuth2CookieUser<OAuth2UserProfile, users::Model, o_auth2_sessions::Model>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<LoginResponse>> {
     let user: &users::Model = user.as_ref();
-    Ok(format!("You are protected! Email: {}", user.email.as_str()))
+    let jwt_secret = ctx.config.get_jwt_config()?;
+
+    let token = user
+        .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+        .or_else(|_| unauthorized("unauthorized!"))?;
+
+    format::json(LoginResponse::new(user, &token))
 }
 pub fn routes() -> Routes {
     Routes::new()

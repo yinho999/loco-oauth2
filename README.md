@@ -24,7 +24,7 @@ Grant, Implicit Grant and more are planned for future releases.
 
 1. [Installation](#installation)
 2. [Glossary](#glossary)
-3. [Configuration (Authorization Code Grant)](#configuration)
+3. [Configuration (Authorization Code Grant)](#configuration-authorization-code-grant)
 4. [Initialization](#initialization)
 5. [Migration](#migration)
 6. [Models](#models)
@@ -57,9 +57,37 @@ loco-oauth2 = "0.1.0"
 | `OAuth2ClientStore`       | Abstraction implementation for managing one or more OAuth2 clients.                                      |
 | `AuthorizationCodeClient` | A client that uses the Authorization Code Grant.                                                         |
 
-<a name="configuration"></a>
+<a name="configuration-authorization-code-grant"></a>
 
 ## Configuration (Authorization Code Grant)
+
+### Generate a private cookie secret key (Optional)
+
+secret_key is used to encrypt the private cookie jar. It must be more than 64 bytes. If not provided, it will be
+auto-generated.
+Here is an example of how to generate a private cookie secret key.
+
+```rust
+use axum_extra::extract::cookie::Key;
+use rand::{Rng, thread_rng};
+
+fn main() {
+    // Generate a cryptographically random key of 64 bytes
+    let mut rng = thread_rng();
+    let mut random_key = [0u8; 64];
+    rng.fill(&mut random_key);
+    match Key::try_from(&random_key[..]) {
+        Ok(key) => {
+            println!("Random key: {:?}", key.master());
+        }
+        Err(e) => {
+            println!("Error: {:?}", e);
+        }
+    }
+}
+```
+
+### OAuth2 Configuration
 
 OAuth2 Configuration is done in the `config/*.yaml` file. The `oauth2` section is used to configure the OAuth2 clients.
 
@@ -90,32 +118,6 @@ settings:
         cookie_config:
           protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:3000/api/oauth2/protected")}} # Optional - For redirecting to protect url in cookie to prevent XSS attack
         timeout_seconds: 600 # Optional, default 600 seconds
-```
-
-### Generate a private cookie secret key
-
-secret_key is used to encrypt the private cookie jar. It must be more than 64 bytes. If not provided, it will be
-auto-generated.
-Here is an example of how to generate a private cookie secret key.
-
-```rust
-use axum_extra::extract::cookie::Key;
-use rand::{Rng, thread_rng};
-
-fn main() {
-    // Generate a cryptographically random key of 64 bytes
-    let mut rng = thread_rng();
-    let mut random_key = [0u8; 64];
-    rng.fill(&mut random_key);
-    match Key::try_from(&random_key[..]) {
-        Ok(key) => {
-            println!("Random key: {:?}", key.master());
-        }
-        Err(e) => {
-            println!("Error: {:?}", e);
-        }
-    }
-}
 ```
 
 <a name="initialization"></a>
@@ -223,6 +225,17 @@ impl Hooks for App {
 <a name="migration"></a>
 
 ## Migration
+
+### Installation
+
+We need to install `loco-oauth2` library within the migration folder.
+
+```bash
+# Within migration folder
+cargo add loco-oauth2
+```
+
+### Migration Script
 
 A migration is required to create the `o_auth2_sessions` table for the `OAuth2ClientStore`.
 
@@ -573,16 +586,25 @@ pub async fn google_callback(
 
 ```rust
 // src/controllers/oauth2.rs
-use crate::models::{o_auth2_sessions, users, users::OAuth2UserProfile};
+use loco_rs::prelude::*;
+use crate::{
+    models::{o_auth2_sessions, users, users::OAuth2UserProfile},
+    views::auth::LoginResponse,
+};
 
 async fn protected(
+    State(ctx): State<AppContext>,
     // Extract the user from the Cookie via middleware
     user: OAuth2CookieUser<OAuth2UserProfile, users::Model, o_auth2_sessions::Model>,
 ) -> Result<impl IntoResponse> {
-    // Get the user from the OAuth2CookieUser
     let user: &users::Model = user.as_ref();
-    // Return the user email
-    Ok(format!("You are protected! Email: {}", user.email.as_str()))
+    let jwt_secret = ctx.config.get_jwt_config()?;
+    // Generate a JWT token
+    let token = user
+        .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+        .or_else(|_| unauthorized("unauthorized!"))?;
+    // Return the user and the token in JSON format
+    format::json(LoginResponse::new(user, &token))
 }
 ```
 
@@ -599,21 +621,30 @@ use loco_oauth2::controllers::{
 };
 use loco_rs::prelude::*;
 
-use crate::models::{o_auth2_sessions, users, users::OAuth2UserProfile};
+use crate::{
+    models::{o_auth2_sessions, users, users::OAuth2UserProfile},
+    views::auth::LoginResponse,
+};
 
 async fn protected(
+    State(ctx): State<AppContext>,
+    // Extract the user from the Cookie via middleware
     user: OAuth2CookieUser<OAuth2UserProfile, users::Model, o_auth2_sessions::Model>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<LoginResponse>> {
     let user: &users::Model = user.as_ref();
-    Ok(format!("You are protected! Email: {}", user.email.as_str()))
+    let jwt_secret = ctx.config.get_jwt_config()?;
+    // Generate a JWT token
+    let token = user
+        .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+        .or_else(|_| unauthorized("unauthorized!"))?;
+    // Return the user and the token in JSON format
+    format::json(LoginResponse::new(user, &token))
 }
 
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("api/oauth2")
-        // T is the session database pool
         .add("/google", get(google_authorization_url::<SessionNullPool>))
-        // T is the OAuth2UserProfile, U is the user model, V is the OAuth2Session model, W is the session database pool
         .add(
             "/google/callback",
             get(google_callback::<

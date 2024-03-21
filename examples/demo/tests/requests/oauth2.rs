@@ -1,6 +1,6 @@
 use std::env;
 
-use demo::{app::App, models::users::OAuth2UserProfile};
+use demo::{app::App, models::users::OAuth2UserProfile, views::auth::LoginResponse};
 use loco_rs::testing;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -264,7 +264,10 @@ async fn can_call_protect() -> Result<(), Box<dyn std::error::Error>> {
             .add_cookies(cookies)
             .await;
         assert_eq!(res.status_code(), 200);
-        assert!(res.text().contains(&settings.profile_mock_body.email));
+        assert_eq!(
+            res.json::<LoginResponse>().name,
+            settings.profile_mock_body.name
+        )
     })
     .await;
     Ok(())
