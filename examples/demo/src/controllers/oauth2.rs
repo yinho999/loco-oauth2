@@ -21,7 +21,10 @@ async fn protected(
 
     let token = user
         .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
-        .or_else(|_| unauthorized("unauthorized!"))?;
+        .or_else(|e| {
+            tracing::error!("Error generating JWT token: {:?}", e);
+            unauthorized("unauthorized!")
+        })?;
 
     format::json(LoginResponse::new(user, &token))
 }
