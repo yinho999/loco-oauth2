@@ -15,7 +15,7 @@ use crate::{
 async fn protected(
     State(ctx): State<AppContext>,
     user: OAuth2CookieUser<OAuth2UserProfile, users::Model, o_auth2_sessions::Model>,
-) -> Result<Json<LoginResponse>> {
+) -> Result<Response> {
     let user: &users::Model = user.as_ref();
     let jwt_secret = ctx.config.get_jwt_config()?;
 

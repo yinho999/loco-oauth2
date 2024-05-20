@@ -22,7 +22,7 @@ axum-extra = { version = "0.9", features = ["cookie", "cookie-private"] }
 axum_session = { version = "0.13" }
 cookie = { version = "0.18", features = ["private"] }
 http = "1.1"
-loco-rs = { version = "0.3" }
+loco-rs = { version = "0.4" }
 oauth2 = "4.4"
 reqwest = { version = "0.11", features = ["serde_json", "json"] }
 sea-orm = { version = "1.0.0-rc.1", features = [
