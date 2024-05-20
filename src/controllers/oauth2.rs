@@ -81,7 +81,6 @@ pub async fn callback<
         .map_err(|e| Error::BadRequest(e.to_string()))?;
     // Get the user profile
     let profile = profile.json::<T>().await.unwrap();
-
     let user = U::upsert_with_oauth(&ctx.db, &profile)
         .await
         .map_err(|_e| {
