@@ -169,6 +169,7 @@ mod tests {
             db: Default::default(),
             redis: None,
             config: Config {
+                initializers: None,
                 logger: Default::default(),
                 server: Server {
                     binding: "test-binding".to_string(),
