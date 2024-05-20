@@ -80,7 +80,11 @@ pub async fn callback<
         .await
         .map_err(|e| Error::BadRequest(e.to_string()))?;
     // Get the user profile
-    let profile = profile.json::<T>().await.unwrap();
+    let body = profile.text().await.unwrap();
+    println!("profile: {:?}", body);
+    println!("token: {:?}", token);
+    let profile: T = serde_json::from_str(&body).unwrap();
+
     let user = U::upsert_with_oauth(&ctx.db, &profile)
         .await
         .map_err(|_e| {
