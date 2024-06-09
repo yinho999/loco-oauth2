@@ -186,6 +186,6 @@ pub async fn protected<
 >(
     user: OAuth2CookieUser<T, U, V>,
 ) -> Result<impl IntoResponse> {
-    let user = user.as_ref();
+    let _user = user.as_ref();
     Ok(format!("You are protected!"))
 }

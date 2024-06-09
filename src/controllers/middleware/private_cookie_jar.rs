@@ -43,6 +43,7 @@ impl AsMut<extract::cookie::PrivateCookieJar> for OAuth2PrivateCookieJar {
 
 impl OAuth2PrivateCookieJar {
     #[must_use]
+    #[allow(unused_mut)]
     pub fn add<C: Into<Cookie<'static>>>(mut self, cookie: C) -> Self {
         Self(self.0.add(cookie.into()))
     }
@@ -57,6 +58,7 @@ impl OAuth2PrivateCookieJar {
         self.0.get(name)
     }
     #[must_use]
+    #[allow(unused_mut)]
     pub fn remove<C: Into<Cookie<'static>>>(mut self, cookie: C) -> Self {
         Self(self.0.remove(cookie.into()))
     }
@@ -133,7 +135,7 @@ where
     type Rejection = Response;
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &S,
+        _state: &S,
     ) -> core::result::Result<Self, Self::Rejection> {
         let Extension(store) = parts
             .extract::<Extension<OAuth2ClientStore>>()

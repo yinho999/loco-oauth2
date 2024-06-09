@@ -8,7 +8,6 @@ pub mod config;
 pub mod controllers;
 pub mod error;
 pub mod grants;
-pub mod middleware;
 pub mod migration;
 pub mod models;
 pub mod oauth2_grant;

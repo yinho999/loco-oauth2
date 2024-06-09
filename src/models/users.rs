@@ -28,7 +28,6 @@ pub trait OAuth2UserTrait<T>: Clone {
     /// * `Self` - The `OAuth2UserTrait` struct
     ///
     /// # Errors
-    ///
-    /// When could not save the user into the DB
+    /// * `ModelError` -  When could not save the user into the DB
     async fn upsert_with_oauth(db: &DatabaseConnection, profile: &T) -> ModelResult<Self>;
 }

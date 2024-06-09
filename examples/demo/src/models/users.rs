@@ -388,7 +388,7 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
         db: &DatabaseConnection,
         session_id: &str,
     ) -> ModelResult<Self> {
-        Model::find_by_oauth2_session_id(db, session_id).await
+        Self::find_by_oauth2_session_id(db, session_id).await
     }
     /// Asynchronously upsert user with OAuth data and saves it to the
     /// database.
