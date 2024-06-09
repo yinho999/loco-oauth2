@@ -165,7 +165,7 @@ async fn can_google_authorization_url() -> Result<(), Box<dyn std::error::Error>
         serde_urlencoded::to_string([("scope", &settings.scope)])?,
     ];
 
-    testing::request::<App, _, _>(|request, ctx| async move {
+    testing::request::<App, _, _>(|request, _ctx| async move {
         // Test the authorization url
         let res = request.get("/api/oauth2/google").await;
         assert_eq!(res.status_code(), 200);
@@ -183,7 +183,7 @@ async fn can_call_google_callback() -> Result<(), Box<dyn std::error::Error>> {
     let settings = set_default_url().await;
     // mock oauth2 server
     mock_oauth_server(&settings, true).await?;
-    testing::request::<App, _, _>(|request, ctx| async move {
+    testing::request::<App, _, _>(|request, _ctx| async move {
         // Get the authorization url from the server
         let auth_res = request.get("/api/oauth2/google").await;
         // Cookie for csrf token
@@ -279,7 +279,7 @@ async fn cannot_call_callback_twice_with_same_csrf_token() -> Result<(), Box<dyn
     let settings = set_default_url().await;
     // mock oauth2 server
     mock_oauth_server(&settings, true).await?;
-    testing::request::<App, _, _>(|request, ctx| async move {
+    testing::request::<App, _, _>(|request, _ctx| async move {
         // Get the authorization url from the server
         let auth_res = request.get("/api/oauth2/google").await;
         // Cookie for csrf token
@@ -331,7 +331,7 @@ pub async fn cannot_call_google_callback_without_csrf_token(
     let settings = set_default_url().await;
     // Mock oauth2 server
     mock_oauth_server(&settings, false).await?;
-    testing::request::<App, _, _>(|request, ctx| async move {
+    testing::request::<App, _, _>(|request, _ctx| async move {
         // Test the google callback without csrf token
         let res = request
             .get("/api/oauth2/google/callback")
@@ -349,7 +349,7 @@ pub async fn cannot_call_google_callback_without_csrf_token(
 #[tokio::test]
 #[serial]
 pub async fn cannot_call_protect_without_cookie() -> Result<(), Box<dyn std::error::Error>> {
-    testing::request::<App, _, _>(|request, ctx| async move {
+    testing::request::<App, _, _>(|request, _ctx| async move {
         // hit the protected url without cookies
         let res = request.get("/api/oauth2/protected").await;
         assert_eq!(res.status_code(), 401);

@@ -10,12 +10,12 @@ pub enum OAuth2StoreError {
     ClientNotFound,
     /// Error for client already exists but different `OAuth2ClientGrantEnum`
     ClientTypeMismatch(String, OAuth2ClientGrantEnum),
-    /// Error parsing from configuration JSON to OAuth2 configuration
-    ConfigJsonError(#[from] serde_json::Error),
+    /// Error parsing from configuration JSON to `OAuth2` configuration
+    ConfigJson(#[from] serde_json::Error),
     /// Error for client creation
-    ClientCreationError(#[from] OAuth2ClientError),
+    ClientCreation(#[from] OAuth2ClientError),
     /// Error for converting key from `[u8]` to `Key`
-    KeyConversionError(#[from] cookie::KeyError),
+    KeyConversion(#[from] cookie::KeyError),
 }
 
 impl OAuth2StoreError {
@@ -25,20 +25,20 @@ impl OAuth2StoreError {
             Self::ClientNotFound => "Client not found".to_string(),
             Self::ClientTypeMismatch(credential_identifier, client) => match client {
                 OAuth2ClientGrantEnum::AuthorizationCode(_) => {
-                    format!("Authorization Code client already exists with credential identifier: {}", credential_identifier)
+                    format!("Authorization Code client already exists with credential identifier: {credential_identifier}", )
                 }
                 OAuth2ClientGrantEnum::ClientCredentials => {
-                    format!("Client Credentials client already exists with credential identifier: {}", credential_identifier)
+                    format!("Client Credentials client already exists with credential identifier: {credential_identifier}", )
                 }
-                OAuth2ClientGrantEnum::DeviceCode => format!("Device Code client already exists with credential identifier: {}", credential_identifier),
-                OAuth2ClientGrantEnum::Implicit => format!("Implicit client already exists with credential identifier: {}", credential_identifier),
+                OAuth2ClientGrantEnum::DeviceCode => format!("Device Code client already exists with credential identifier: {credential_identifier}", ),
+                OAuth2ClientGrantEnum::Implicit => format!("Implicit client already exists with credential identifier: {credential_identifier}", ),
                 OAuth2ClientGrantEnum::ResourceOwnerPasswordCredentials => format!(
-                    "Resource Owner Password Credentials client already exists with credential identifier: {}", credential_identifier
+                    "Resource Owner Password Credentials client already exists with credential identifier: {credential_identifier}", 
                 ),
             },
-            Self::ConfigJsonError(err) => format!("Cannot parse JSON for OAuth2 configuration: {}", err),
-            Self::ClientCreationError(err) => format!("Error creating client: {}", err),
-            Self::KeyConversionError(err) => format!("Error converting key: {}", err),
+            Self::ConfigJson(err) => format!("Cannot parse JSON for OAuth2 configuration: {err}", ),
+            Self::ClientCreation(err) => format!("Error creating client: {err}", ),
+            Self::KeyConversion(err) => format!("Error converting key: {err}", ),
         }
     }
 }

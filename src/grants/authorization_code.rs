@@ -15,17 +15,17 @@ use subtle::ConstantTimeEq;
 use crate::error::{OAuth2ClientError, OAuth2ClientResult};
 
 /// A credentials struct that holds the `OAuth2` client credentials. - For
-/// [`AuthorizationCodeClient`]
+/// [`Client`]
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct AuthorizationCodeCredentials {
+pub struct Credentials {
     pub client_id: String,
     pub client_secret: Option<String>,
 }
 
 /// A url config struct that holds the `OAuth2` client related URLs. - For
-/// [`AuthorizationCodeClient`]
+/// [`Client`]
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct AuthorizationCodeUrlConfig {
+pub struct UrlConfig {
     pub auth_url: String,
     pub token_url: String,
     pub redirect_url: String,
@@ -34,15 +34,15 @@ pub struct AuthorizationCodeUrlConfig {
 }
 
 /// An url config struct that holds the Cookie related URLs. - For
-/// [`AuthorizationCodeClient`]
+/// [`Client`]
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct AuthorizationCodeCookieConfig {
+pub struct CookieConfig {
     pub protected_url: Option<String>,
 }
 
-/// [`AuthorizationCodeClient`] that acts as a client for the Authorization Code
+/// [`Client`] that acts as a client for the Authorization Code
 /// Grant flow.
-pub struct AuthorizationCodeClient {
+pub struct Client {
     /// [`BasicClient`] instance for the `OAuth2` client.
     pub oauth2: BasicClient,
     /// [`Url`] instance for the `OAuth2` client's profile URL.
@@ -57,22 +57,22 @@ pub struct AuthorizationCodeClient {
     /// A [`std::time::Duration`] for the `OAuth2` client's CSRF token timeout
     /// which defaults to 10 minutes (600s).
     pub csrf_token_timeout: std::time::Duration,
-    /// An optional [`AuthorizationCodeCookieConfig`] for the `OAuth2` client's
+    /// An optional [`CookieConfig`] for the `OAuth2` client's
     /// cookie during middleware
-    pub cookie_config: AuthorizationCodeCookieConfig,
+    pub cookie_config: CookieConfig,
 }
 
-impl AuthorizationCodeClient {
+impl Client {
     /// Create a new instance of [`OAuth2Client`].
     /// # Arguments
-    /// * `credentials` - A [`AuthorizationCodeCredentials`] struct that holds
+    /// * `credentials` - A [`Credentials`] struct that holds
     ///   the `OAuth2` client credentials.
-    /// * `config` - A [`AuthorizationCodeUrlConfig`] struct that holds the
+    /// * `config` - A [`UrlConfig`] struct that holds the
     ///   `OAuth2` client related URLs.
     /// * `timeout_seconds` - An optional timeout in seconds for the csrf token.
     ///   Defaults to 10 minutes (600s).
     /// # Returns
-    /// A [`AuthorizationCodeClient`] instance
+    /// A [`Client`] instance
     /// # Errors
     /// [`OAuth2ClientError::UrlError`] if the `auth_url`, `token_url`,
     /// `redirect_url` or `profile_url` is invalid.
@@ -93,9 +93,9 @@ impl AuthorizationCodeClient {
     /// let client = AuthorizationCodeClient::new(credentials, config, None)?;
     /// ```
     pub fn new(
-        credentials: AuthorizationCodeCredentials,
-        config: AuthorizationCodeUrlConfig,
-        cookie_config: AuthorizationCodeCookieConfig,
+        credentials: Credentials,
+        config: UrlConfig,
+        cookie_config: CookieConfig,
         timeout_seconds: Option<u64>,
     ) -> OAuth2ClientResult<Self> {
         let client_id = ClientId::new(credentials.client_id);
@@ -121,7 +121,7 @@ impl AuthorizationCodeClient {
             cookie_config,
         })
     }
-    /// Remove expired flow states within the [`AuthorizationCodeClient`].
+    /// Remove expired flow states within the [`Client`].
     /// # Example
     /// ```rust,ignore
     /// client.remove_expire_flow(); // Clear outdated states within client.flow_states
@@ -149,16 +149,16 @@ impl AuthorizationCodeClient {
 }
 
 #[async_trait::async_trait]
-pub trait AuthorizationCodeGrantTrait: Send + Sync {
+pub trait GrantTrait: Send + Sync {
     /// Get authorization code client
     /// # Returns
-    /// A mutable reference to the [`AuthorizationCodeClient`] instance.
-    fn get_authorization_code_client(&mut self) -> &mut AuthorizationCodeClient;
+    /// A mutable reference to the [`Client`] instance.
+    fn get_authorization_code_client(&mut self) -> &mut Client;
 
     /// Get `AuthorizationCodeCookieConfig` instance
     /// # Returns
     /// A reference to the `AuthorizationCodeCookieConfig` instance.
-    fn get_cookie_config(&self) -> &AuthorizationCodeCookieConfig;
+    fn get_cookie_config(&self) -> &CookieConfig;
 
     /// Get authorization URL
     /// # Returns
@@ -239,13 +239,13 @@ pub trait AuthorizationCodeGrantTrait: Send + Sync {
     ///   query.
     /// * `csrf_token` - A string containing the CSRF token saved in the
     ///   temporary session after the
-    ///   [`AuthorizationCodeClient::get_authorization_url`] method.
+    ///   [`Client::get_authorization_url`] method.
     /// # Returns
     /// A tuple containing the token response and the profile response.
     /// [`BasicTokenResponse`] is the token response from the OAuth2 provider.
     /// [`Response`] is the profile response from the OAuth2 provider which
     /// describes the user's profile. This response json information will be
-    /// determined by [`AuthorizationCodeClient::scopes`] # Errors
+    /// determined by [`Client::scopes`] # Errors
     /// An [`OAuth2ClientError::CsrfTokenError`] if the csrf token is invalid.
     /// An [`OAuth2ClientError::BasicTokenError`] if the token
     /// exchange fails.
@@ -314,7 +314,6 @@ pub trait AuthorizationCodeGrantTrait: Send + Sync {
     ///      Ok((jar, Redirect::to("/protected")))
     /// }
     ///     
-    #[must_use]
     async fn verify_code_from_callback(
         &mut self,
         code: String,
@@ -325,7 +324,7 @@ pub trait AuthorizationCodeGrantTrait: Send + Sync {
         // Clear outdated flow states
         client.remove_expire_flow();
         // Compare csrf token, use subtle to prevent time attack
-        if !AuthorizationCodeClient::constant_time_compare(&csrf_token, &state) {
+        if !Client::constant_time_compare(&csrf_token, &state) {
             return Err(OAuth2ClientError::CsrfTokenError);
         }
         // Get the pkce_verifier for exchanging code
@@ -353,11 +352,11 @@ pub trait AuthorizationCodeGrantTrait: Send + Sync {
     }
 }
 
-impl AuthorizationCodeGrantTrait for AuthorizationCodeClient {
-    fn get_authorization_code_client(&mut self) -> &mut AuthorizationCodeClient {
+impl GrantTrait for Client {
+    fn get_authorization_code_client(&mut self) -> &mut Client {
         self
     }
-    fn get_cookie_config(&self) -> &AuthorizationCodeCookieConfig {
+    fn get_cookie_config(&self) -> &CookieConfig {
         &self.cookie_config
     }
 }
@@ -420,11 +419,11 @@ mod tests {
                 client_id: "test_client_id".to_string(),
                 client_secret: "test_client_secret".to_string(),
                 code: "test_code".to_string(),
-                auth_url: format!("{}/auth_url", url),
-                token_url: format!("{}/token_url", url),
-                redirect_url: format!("{}/redirect_url", url),
-                profile_url: format!("{}/profile_url", url),
-                scope: format!("{}/scope_1", url),
+                auth_url: format!("{url}/auth_url",),
+                token_url: format!("{url}/token_url",),
+                redirect_url: format!("{url}/redirect_url",),
+                profile_url: format!("{url}/profile_url",),
+                scope: format!("{url}/scope_1",),
                 exchange_mock_body,
                 profile_mock_body: user_profile,
                 mock_server: server,
@@ -437,46 +436,47 @@ mod tests {
         let host = url.host_str().unwrap_or_default(); // Get the host as a str, default to empty string if not present
 
         let path = url.path();
-        match url.port() {
-            Some(port) => format!("{}://{}:{}{}", scheme, host, port, path),
-            None => format!("{}://{}{}", scheme, host, path),
-        }
+        url.port().map_or_else(
+            || format!("{scheme}://{host}{path}"),
+            |port| format!("{scheme}://{host}:{port}{path}"),
+        )
     }
 
-    async fn create_client() -> OAuth2ClientResult<(AuthorizationCodeClient, Settings)> {
+    async fn create_client() -> OAuth2ClientResult<(Client, Settings)> {
         let settings = Settings::new().await;
-        let credentials = AuthorizationCodeCredentials {
+        let credentials = Credentials {
             client_id: settings.client_id.to_string(),
             client_secret: Some(settings.client_secret.to_string()),
         };
-        let url_config = AuthorizationCodeUrlConfig {
+        let url_config = UrlConfig {
             auth_url: settings.auth_url.to_string(),
             token_url: settings.token_url.to_string(),
             redirect_url: settings.redirect_url.to_string(),
             profile_url: settings.profile_url.to_string(),
             scopes: vec![settings.scope.to_string()],
         };
-        let cookie_config = AuthorizationCodeCookieConfig {
+        let cookie_config = CookieConfig {
             protected_url: None,
         };
-        let client = AuthorizationCodeClient::new(credentials, url_config, cookie_config, None)?;
+        let client = Client::new(credentials, url_config, cookie_config, None)?;
         Ok((client, settings))
     }
 
     #[derive(thiserror::Error, Debug)]
     enum TestError {
         #[error(transparent)]
-        OAuth2ClientError(#[from] OAuth2ClientError),
+        OAuth2Client(#[from] OAuth2ClientError),
         #[error(transparent)]
-        ReqwestError(reqwest::Error),
+        #[allow(dead_code)]
+        Reqwest(reqwest::Error),
         #[error("Couldnt find {0}")]
-        QueryMapError(String),
+        QueryMap(String),
         #[error("Unable to deserialize profile")]
-        ProfileError,
+        Profile,
         #[error("Mock json data parse Error")]
-        MockJsonDataError(#[from] serde_json::Error),
+        MockJsonData(#[from] serde_json::Error),
         #[error("Mock form data error")]
-        MockFormDataError(#[from] serde_urlencoded::ser::Error),
+        MockFormData(#[from] serde_urlencoded::ser::Error),
     }
 
     #[tokio::test]
@@ -485,44 +485,39 @@ mod tests {
         let (url, csrf_token) = client.get_authorization_url();
         let base_url_with_path = get_base_url_with_path(&url);
         // compare between the auth_url with the base url
-        assert_eq!(settings.auth_url.to_string(), base_url_with_path);
+        assert_eq!(settings.auth_url, base_url_with_path);
         let query_map_multi: HashMap<String, Vec<String>> =
             form_urlencoded::parse(url.query().unwrap_or("").as_bytes())
                 .into_owned()
                 .fold(std::collections::HashMap::new(), |mut acc, (key, value)| {
-                    acc.entry(key).or_insert_with(Vec::new).push(value);
+                    acc.entry(key).or_default().push(value);
                     acc
                 });
         // Check response type
-        let response_type =
-            query_map_multi
-                .get("response_type")
-                .ok_or(TestError::QueryMapError(
-                    "Couldnt find response type".to_string(),
-                ))?;
+        let response_type = query_map_multi
+            .get("response_type")
+            .ok_or(TestError::QueryMap(
+                "Couldnt find response type".to_string(),
+            ))?;
         assert_eq!(response_type[0], "code");
         let client_id = query_map_multi
             .get("client_id")
-            .ok_or(TestError::QueryMapError(
-                "Couldnt find client id".to_string(),
-            ))?;
+            .ok_or(TestError::QueryMap("Couldnt find client id".to_string()))?;
         assert_eq!(client_id[0], settings.client_id);
         // Check redirect url
         let redirect_url = query_map_multi
             .get("redirect_uri")
-            .ok_or(TestError::QueryMapError(
-                "Couldnt find redirect url".to_string(),
-            ))?;
+            .ok_or(TestError::QueryMap("Couldnt find redirect url".to_string()))?;
         assert_eq!(redirect_url[0], settings.redirect_url);
         // Check scopes
         let scopes = query_map_multi
             .get("scope")
-            .ok_or(TestError::QueryMapError("Couldnt find scopes".to_string()))?;
+            .ok_or(TestError::QueryMap("Couldnt find scopes".to_string()))?;
         assert_eq!(scopes[0], settings.scope);
         // Check state
         let state = query_map_multi
             .get("state")
-            .ok_or(TestError::QueryMapError("Couldnt find state".to_string()))?;
+            .ok_or(TestError::QueryMap("Couldnt find state".to_string()))?;
         assert_eq!(state[0], csrf_token.secret().to_owned());
         Ok(())
     }
@@ -584,7 +579,7 @@ mod tests {
         let profile = profile
             .json::<UserProfile>()
             .await
-            .map_err(|_| TestError::ProfileError)?;
+            .map_err(|_| TestError::Profile)?;
         assert_eq!(profile.email, "test_email");
         Ok(())
     }

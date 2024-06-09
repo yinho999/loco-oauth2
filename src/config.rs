@@ -1,7 +1,5 @@
 use crate::error::OAuth2StoreError;
-use crate::grants::authorization_code::{
-    AuthorizationCodeCookieConfig, AuthorizationCodeCredentials, AuthorizationCodeUrlConfig,
-};
+use crate::grants::authorization_code::{CookieConfig, Credentials, UrlConfig};
 use serde::de::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -34,21 +32,21 @@ use std::str::FromStr;
 ///     timeout_seconds: 600 # Optional, default 600 seconds
 /// ```
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct OAuth2Config {
+pub struct Config {
     pub secret_key: Option<Vec<u8>>,
-    pub authorization_code: Vec<AuthorizationCodeConfig>,
+    pub authorization_code: Vec<AuthorizationCode>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct AuthorizationCodeConfig {
+pub struct AuthorizationCode {
     pub client_identifier: String,
-    pub client_credentials: AuthorizationCodeCredentials,
-    pub url_config: AuthorizationCodeUrlConfig,
-    pub cookie_config: AuthorizationCodeCookieConfig,
+    pub client_credentials: Credentials,
+    pub url_config: UrlConfig,
+    pub cookie_config: CookieConfig,
     pub timeout_seconds: Option<u64>,
 }
 
-impl TryFrom<Value> for OAuth2Config {
+impl TryFrom<Value> for Config {
     type Error = OAuth2StoreError;
     #[tracing::instrument(name = "Convert Value to OAuth2Config")]
     fn try_from(value: Value) -> Result<Self, Self::Error> {
@@ -59,7 +57,7 @@ impl TryFrom<Value> for OAuth2Config {
                     .collect()
             });
 
-        let authorization_code: Vec<AuthorizationCodeConfig> = value
+        let authorization_code: Vec<AuthorizationCode> = value
             .get("authorization_code")
             .and_then(|v| v.as_array())
             .ok_or_else(|| {

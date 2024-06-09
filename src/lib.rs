@@ -1,3 +1,4 @@
+#![allow(elided_lifetimes_in_paths)]
 use crate::oauth2_grant::OAuth2ClientGrantEnum;
 use axum::extract::FromRef;
 use axum_extra::extract::cookie::Key;
@@ -13,10 +14,10 @@ pub mod models;
 pub mod oauth2_grant;
 
 const COOKIE_NAME: &str = "sid";
-use crate::config::OAuth2Config;
+use crate::config::Config;
 use crate::error::{OAuth2ClientResult, OAuth2StoreError, OAuth2StoreResult};
-use crate::grants::authorization_code::{AuthorizationCodeClient, AuthorizationCodeGrantTrait};
-pub use oauth2::*;
+use crate::grants::authorization_code::{Client, GrantTrait};
+pub use oauth2 as base_oauth2;
 use tokio::sync::{Mutex, MutexGuard};
 
 #[derive(Clone)]
@@ -29,10 +30,13 @@ impl OAuth2ClientStore {
     /// Create a new instance of `OAuth2ClientStore`.
     /// # Arguments
     /// * `config` - An instance of `OAuth2Config` that holds the `OAuth2` configuration.
+    ///
     /// # Returns
-    /// * `OAuth2StoreResult<Self>` - A result that holds the `OAuth2ClientStore` if successful, otherwise an `OAuth2StoreError`.
-    #[must_use]
-    pub fn new(config: OAuth2Config) -> OAuth2StoreResult<Self> {
+    /// * `Self` - An instance of `OAuth2ClientStore`.
+    ///
+    /// # Errors
+    /// * `OAuth2StoreError` - An error indicating the failure to create the `OAuth2ClientStore`.
+    pub fn new(config: Config) -> OAuth2StoreResult<Self> {
         let mut clients = BTreeMap::new();
         Self::insert_authorization_code_clients(&mut clients, config.authorization_code)?;
         let key = match config.secret_key {
@@ -53,14 +57,14 @@ impl OAuth2ClientStore {
     )]
     fn insert_authorization_code_clients(
         clients: &mut BTreeMap<String, OAuth2ClientGrantEnum>,
-        authorization_code: Vec<config::AuthorizationCodeConfig>,
+        authorization_code: Vec<config::AuthorizationCode>,
     ) -> OAuth2ClientResult<()> {
         for grant in authorization_code {
             tracing::info!(
                 "Creating Authorization Code Grant client: {:?}",
                 grant.client_identifier
             );
-            let client = AuthorizationCodeClient::new(
+            let client = Client::new(
                 grant.client_credentials,
                 grant.url_config,
                 grant.cookie_config,
@@ -93,10 +97,10 @@ impl OAuth2ClientStore {
     /// # Returns
     /// * `OAuth2StoreResult<&AuthorizationCodeClient>` - A result that holds a reference to the `AuthorizationCodeClient` if found, otherwise an `OAuth2StoreError`.
     #[tracing::instrument(name = "Get Authorization Code Grant client", skip(self))]
-    pub async fn get_authorization_code_client<T: AsRef<str> + std::fmt::Debug>(
+    pub async fn get_authorization_code_client<T: AsRef<str> + std::fmt::Debug + Send>(
         &self,
         client_identifier: T,
-    ) -> OAuth2StoreResult<MutexGuard<dyn AuthorizationCodeGrantTrait>> {
+    ) -> OAuth2StoreResult<MutexGuard<'_, dyn GrantTrait>> {
         match self.get(&client_identifier) {
             Some(OAuth2ClientGrantEnum::AuthorizationCode(client)) => {
                 let client = client.lock().await;

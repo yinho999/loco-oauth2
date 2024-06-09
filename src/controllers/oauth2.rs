@@ -11,7 +11,7 @@ use tokio::sync::MutexGuard;
 
 use crate::controllers::middleware::OAuth2PrivateCookieJarTrait;
 use crate::controllers::middleware::{OAuth2CookieUser, OAuth2PrivateCookieJar};
-use crate::grants::authorization_code::AuthorizationCodeGrantTrait;
+use crate::grants::authorization_code::GrantTrait;
 use crate::models::oauth2_sessions::OAuth2SessionsTrait;
 use crate::models::users::OAuth2UserTrait;
 
@@ -32,7 +32,7 @@ pub struct AuthParams {
 /// * `String` - The authorization URL
 pub async fn get_authorization_url<T: DatabasePool + Clone + Debug + Sync + Send + 'static>(
     session: Session<T>,
-    oauth2_client: &mut MutexGuard<'_, dyn AuthorizationCodeGrantTrait>,
+    oauth2_client: &mut MutexGuard<'_, dyn GrantTrait>,
 ) -> String {
     let (auth_url, csrf_token) = oauth2_client.get_authorization_url();
     session.set("CSRF_TOKEN", csrf_token.secret().to_owned());
@@ -43,7 +43,7 @@ pub async fn get_authorization_url<T: DatabasePool + Clone + Debug + Sync + Send
 /// then upsert the user and the session and set the token in a short live
 /// cookie Lastly, it will redirect the user to the protected URL
 /// # Generics
-/// * `T` - The user profile, should implement `DeserializeOwned`
+/// * `T` - The user profile, should implement `DeserializeOwned` and `Send`
 /// * `U` - The user model, should implement `OAuth2UserTrait` and `ModelTrait`
 /// * `V` - The session model, should implement `OAuth2SessionsTrait` and `ModelTrait`
 /// * `W` - The database pool
@@ -58,7 +58,7 @@ pub async fn get_authorization_url<T: DatabasePool + Clone + Debug + Sync + Send
 /// # Errors
 /// * `loco_rs::errors::Error`
 pub async fn callback<
-    T: DeserializeOwned,
+    T: DeserializeOwned + Send,
     U: OAuth2UserTrait<T> + ModelTrait,
     V: OAuth2SessionsTrait<U>,
     W: DatabasePool + Clone + Debug + Sync + Send + 'static,
@@ -68,7 +68,7 @@ pub async fn callback<
     params: AuthParams,
     // Extract the private cookie jar from the request
     jar: OAuth2PrivateCookieJar,
-    client: &mut MutexGuard<'_, dyn AuthorizationCodeGrantTrait>,
+    client: &mut MutexGuard<'_, dyn GrantTrait>,
 ) -> Result<impl IntoResponse> {
     // Get the CSRF token from the session
     let csrf_token = session
@@ -80,7 +80,10 @@ pub async fn callback<
         .await
         .map_err(|e| Error::BadRequest(e.to_string()))?;
     // Get the user profile
-    let profile = profile.json::<T>().await.unwrap();
+    let profile = profile.json::<T>().await.map_err(|e| {
+        tracing::error!("Error getting profile: {:?}", e);
+        Error::InternalServerError
+    })?;
     let user = U::upsert_with_oauth(&ctx.db, &profile)
         .await
         .map_err(|_e| {
@@ -133,6 +136,7 @@ pub async fn google_authorization_url<T: DatabasePool + Clone + Debug + Sync + S
             Error::InternalServerError
         })?;
     let auth_url = get_authorization_url(session, &mut client).await;
+    drop(client);
     Ok(auth_url)
 }
 
@@ -141,7 +145,7 @@ pub async fn google_authorization_url<T: DatabasePool + Clone + Debug + Sync + S
 /// then upsert the user and the session and set the token in a short live
 /// cookie Lastly, it will redirect the user to the protected URL
 /// # Generics
-/// * `T` - The user profile, should implement `DeserializeOwned`
+/// * `T` - The user profile, should implement `DeserializeOwned` and `Send`
 /// * `U` - The user model, should implement `OAuth2UserTrait` and `ModelTrait`
 /// * `V` - The session model, should implement `OAuth2SessionsTrait` and `ModelTrait`
 /// # Arguments
@@ -156,7 +160,7 @@ pub async fn google_authorization_url<T: DatabasePool + Clone + Debug + Sync + S
 /// # Errors
 /// * `loco_rs::errors::Error`
 pub async fn google_callback<
-    T: DeserializeOwned,
+    T: DeserializeOwned + Send,
     U: OAuth2UserTrait<T> + ModelTrait,
     V: OAuth2SessionsTrait<U>,
     W: DatabasePool + Clone + Debug + Sync + Send + 'static,
@@ -176,16 +180,30 @@ pub async fn google_callback<
             Error::InternalServerError
         })?;
     let response = callback::<T, U, V, W>(ctx, session, params, jar, &mut client).await?;
+    drop(client);
     Ok(response)
 }
 
+/// The protected URL for the `OAuth2` flow
+/// This will return a message indicating that the user is protected
+///
+/// # Generics
+/// * `T` - The user profile, should implement `DeserializeOwned` and `Send`
+/// * `U` - The user model, should implement `OAuth2UserTrait` and `ModelTrait`
+/// * `V` - The session model, should implement `OAuth2SessionsTrait` and `ModelTrait`
+/// # Arguments
+/// * `user` - The `OAuth2CookieUser` that holds the user and the session
+/// # Returns
+/// The response with the message indicating that the user is protected
+/// # Errors
+/// * `loco_rs::errors::Error` - When the user cannot be retrieved
 pub async fn protected<
-    T: DeserializeOwned,
+    T: DeserializeOwned + Send,
     U: OAuth2UserTrait<T> + ModelTrait,
     V: OAuth2SessionsTrait<U> + ModelTrait,
 >(
     user: OAuth2CookieUser<T, U, V>,
 ) -> Result<impl IntoResponse> {
     let _user = user.as_ref();
-    Ok(format!("You are protected!"))
+    Ok("You are protected!".to_string())
 }

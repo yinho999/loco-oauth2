@@ -1,5 +1,5 @@
 use axum::{async_trait, Extension, Router as AxumRouter};
-use loco_oauth2::{config::OAuth2Config, OAuth2ClientStore};
+use loco_oauth2::{config::Config, OAuth2ClientStore};
 use loco_rs::prelude::*;
 
 pub struct OAuth2StoreInitializer;
@@ -19,7 +19,7 @@ impl Initializer for OAuth2StoreInitializer {
             .get("oauth2")
             .ok_or(Error::Message("oauth2 config not found".to_string()))?
             .clone();
-        let oauth2_config: OAuth2Config = oauth2_config_value.try_into().map_err(|e| {
+        let oauth2_config: Config = oauth2_config_value.try_into().map_err(|e| {
             tracing::error!(error = ?e, "could not convert oauth2 config");
             Error::Message("could not convert oauth2 config".to_string())
         })?;

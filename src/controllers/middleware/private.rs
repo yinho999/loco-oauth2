@@ -1,5 +1,5 @@
-use crate::grants::authorization_code::AuthorizationCodeCookieConfig;
-use crate::{url, OAuth2ClientStore, COOKIE_NAME};
+use crate::grants::authorization_code::CookieConfig;
+use crate::{base_oauth2::url, OAuth2ClientStore, COOKIE_NAME};
 use async_trait::async_trait;
 use axum::response::{IntoResponse, IntoResponseParts, ResponseParts};
 use axum::{
@@ -44,6 +44,7 @@ impl AsMut<extract::cookie::PrivateCookieJar> for OAuth2PrivateCookieJar {
 impl OAuth2PrivateCookieJar {
     #[must_use]
     #[allow(unused_mut)]
+    #[allow(clippy::should_implement_trait)]
     pub fn add<C: Into<Cookie<'static>>>(mut self, cookie: C) -> Self {
         Self(self.0.add(cookie.into()))
     }
@@ -84,7 +85,7 @@ pub trait OAuth2PrivateCookieJarTrait: Clone {
     /// # Errors
     /// * `Error` - When the cookie cannot be created
     fn create_short_live_cookie_with_token_response(
-        config: &AuthorizationCodeCookieConfig,
+        config: &CookieConfig,
         token: &BasicTokenResponse,
         jar: Self,
     ) -> loco_rs::prelude::Result<Self>;
@@ -92,7 +93,7 @@ pub trait OAuth2PrivateCookieJarTrait: Clone {
 
 impl OAuth2PrivateCookieJarTrait for OAuth2PrivateCookieJar {
     fn create_short_live_cookie_with_token_response(
-        config: &AuthorizationCodeCookieConfig,
+        config: &CookieConfig,
         token: &BasicTokenResponse,
         jar: Self,
     ) -> loco_rs::prelude::Result<Self> {
@@ -140,8 +141,8 @@ where
         let Extension(store) = parts
             .extract::<Extension<OAuth2ClientStore>>()
             .await
-            .map_err(|err| err.into_response())?;
-        let key = store.key.clone();
+            .map_err(axum::response::IntoResponse::into_response)?;
+        let key = store.key;
         let jar = extract::cookie::PrivateCookieJar::from_headers(&parts.headers, key);
         Ok(Self(jar))
     }
@@ -149,14 +150,15 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::http::StatusCode;
+    use crate::base_oauth2::http::StatusCode;
     use axum::routing::get;
     use axum::Router;
     use axum_extra::extract::PrivateCookieJar;
     use axum_test::TestServer;
     use http::header::{HeaderValue, COOKIE};
-    use loco_rs::config::{Config, Database, Middlewares, Server};
+    use loco_rs::config::{Config, Database, Logger, Middlewares, Server, Workers};
     use loco_rs::environment::Environment;
+    use sea_orm::DatabaseConnection;
     use serde_json::json;
     use std::collections::BTreeMap;
 
@@ -168,11 +170,11 @@ mod tests {
     fn create_default_app_context() -> AppContext {
         AppContext {
             environment: Environment::Production,
-            db: Default::default(),
+            db: DatabaseConnection::default(),
             redis: None,
             config: Config {
                 initializers: None,
-                logger: Default::default(),
+                logger: Logger::default(),
                 server: Server {
                     binding: "test-binding".to_string(),
                     port: 8080,
@@ -190,7 +192,7 @@ mod tests {
                     },
                 },
                 database: Database {
-                    uri: "".to_string(),
+                    uri: String::new(),
                     enable_logging: false,
                     min_connections: 0,
                     max_connections: 0,
@@ -202,7 +204,7 @@ mod tests {
                 },
                 redis: None,
                 auth: None,
-                workers: Default::default(),
+                workers: Workers::default(),
                 mailer: None,
                 settings: None,
             },
@@ -224,7 +226,7 @@ mod tests {
         let key = create_key();
         let mut headers = HeaderMap::new();
         headers.insert(COOKIE, HeaderValue::from_static(""));
-        let jar = OAuth2PrivateCookieJar::from_headers(&headers, key.clone());
+        let jar = OAuth2PrivateCookieJar::from_headers(&headers, key);
 
         let cookie_name = "test_cookie";
         let cookie_value = "test_value";
@@ -248,7 +250,7 @@ mod tests {
         let key = create_key();
         let mut headers = HeaderMap::new();
         headers.insert(COOKIE, HeaderValue::from_static(""));
-        let jar = OAuth2PrivateCookieJar::from_headers(&headers, key.clone());
+        let jar = OAuth2PrivateCookieJar::from_headers(&headers, key);
 
         let cookie_name = "test_cookie";
         let cookie_value = "test_value";
@@ -293,7 +295,7 @@ mod tests {
         // Simulate receiving a request with the encrypted cookie
         let mut headers = HeaderMap::new();
         headers.insert("cookie", encrypted_cookie_value.parse().unwrap());
-        let private_jar = PrivateCookieJar::from_headers(&HeaderMap::new(), key.clone());
+        let private_jar = PrivateCookieJar::from_headers(&HeaderMap::new(), key);
         let mut original_cookie = None;
         for cookie in cookies_from_request(&headers) {
             if let Some(cookie) = private_jar.decrypt(cookie) {
@@ -314,7 +316,7 @@ mod tests {
         let key = create_key();
         let mut headers = HeaderMap::new();
         headers.insert(COOKIE, HeaderValue::from_static(""));
-        let jar = OAuth2PrivateCookieJar::from_headers(&headers, key.clone());
+        let jar = OAuth2PrivateCookieJar::from_headers(&headers, key);
 
         let cookie_name = "test_cookie";
         let cookie_value = "test_value";
