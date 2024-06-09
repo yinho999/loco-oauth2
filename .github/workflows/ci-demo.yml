@@ -3,12 +3,12 @@ name: examples/demo
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - examples/demo/**
   pull_request:
     branches:
-      - main
+      - master
 
 env:
   RUST_TOOLCHAIN: stable
