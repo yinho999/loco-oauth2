@@ -13,6 +13,11 @@ categories = ["web-programming"]
 [lib]
 path = "src/lib.rs"
 
+[profile.dev]
+opt-level = 1
+[profile.dev.package."*"]
+opt-level = 3
+
 [dependencies]
 async-trait = "0.1"
 async-std = { version = "1", features = ["attributes", "tokio1"] }
