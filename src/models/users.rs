@@ -1,5 +1,6 @@
+use async_trait::async_trait;
 use loco_rs::model::ModelResult;
-use loco_rs::prelude::*;
+// use loco_rs::prelude::*;
 use sea_orm::DatabaseConnection;
 
 /// Trait for OAuth2 user.

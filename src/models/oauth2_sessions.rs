@@ -1,5 +1,6 @@
+use async_trait::async_trait;
 use loco_rs::model::ModelResult;
-use loco_rs::prelude::*;
+// use loco_rs::prelude::*;
 use oauth2::basic::BasicTokenResponse;
 use sea_orm::DatabaseConnection;
 
