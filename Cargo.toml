@@ -24,13 +24,13 @@ async-std = { version = "1", features = ["attributes", "tokio1"] }
 axum = "0.7.4"
 axum-extra = { version = "0.9", features = ["cookie", "cookie-private"] }
 # axum session
-axum_session = { version = "0.13" }
+axum_session = { version = "0.14" }
 cookie = { version = "0.18", features = ["private"] }
 http = "1.1"
-loco-rs = { version = "0.4" }
+loco-rs = { version = "0.6.0" }
 oauth2 = "4.4"
 reqwest = { version = "0.11", features = ["serde_json", "json"] }
-sea-orm = { version = "1.0.0-rc.1", features = [
+sea-orm = { version = "1.0.0-rc.4", features = [
     "sqlx-sqlite",
     "sqlx-postgres",
     "runtime-tokio-rustls",

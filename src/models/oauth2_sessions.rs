@@ -1,4 +1,3 @@
-use loco_rs::model::ModelResult;
 use loco_rs::prelude::*;
 use oauth2::basic::BasicTokenResponse;
 use sea_orm::DatabaseConnection;
