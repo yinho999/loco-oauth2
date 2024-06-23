@@ -53,19 +53,19 @@ impl OAuth2Settings {
             sub: "test_sub".to_string(),
             email_verified: true,
             family_name: Some("test_family_name".to_string()),
-            given_name:Some( "test_given_name".to_string()),
-            locale:Some( "test_locale".to_string()),
+            given_name: Some("test_given_name".to_string()),
+            locale: Some("test_locale".to_string()),
         };
         Self {
             client_id: "test_client_id".to_string(),
             client_secret: "test_client_secret".to_string(),
             code: "test_code".to_string(),
-            auth_url: format!("{url}/auth_url", ),
-            token_url: format!("{url}/token_url", ),
-            redirect_url: format!("{url}/redirect_url", ),
+            auth_url: format!("{url}/auth_url",),
+            token_url: format!("{url}/token_url",),
+            redirect_url: format!("{url}/redirect_url",),
             profile_url: format!("{url}/profile_url",),
-            protected_url: format!("{url}/oauth/protected_url", ),
-            scope: format!("{url}/scope_1", ),
+            protected_url: format!("{url}/oauth/protected_url",),
+            scope: format!("{url}/scope_1",),
             exchange_mock_body,
             profile_mock_body: user_profile,
             mock_server: server,
@@ -173,7 +173,7 @@ async fn can_google_authorization_url() -> Result<(), Box<dyn std::error::Error>
             assert!(res.text().contains(&url));
         }
     })
-        .await;
+    .await;
     Ok(())
 }
 
@@ -215,7 +215,7 @@ async fn can_call_google_callback() -> Result<(), Box<dyn std::error::Error>> {
             &settings.protected_url
         );
     })
-        .await;
+    .await;
     Ok(())
 }
 
@@ -269,7 +269,7 @@ async fn can_call_protect() -> Result<(), Box<dyn std::error::Error>> {
             settings.profile_mock_body.name
         );
     })
-        .await;
+    .await;
     Ok(())
 }
 #[tokio::test]
@@ -321,7 +321,7 @@ async fn cannot_call_callback_twice_with_same_csrf_token() -> Result<(), Box<dyn
             .await;
         assert_eq!(res.status_code(), 400);
     })
-        .await;
+    .await;
     Ok(())
 }
 #[tokio::test]
@@ -342,7 +342,7 @@ pub async fn cannot_call_google_callback_without_csrf_token(
             .await;
         assert_eq!(res.status_code(), 400);
     })
-        .await;
+    .await;
     Ok(())
 }
 
@@ -354,6 +354,6 @@ pub async fn cannot_call_protect_without_cookie() -> Result<(), Box<dyn std::err
         let res = request.get("/api/oauth2/protected").await;
         assert_eq!(res.status_code(), 401);
     })
-        .await;
+    .await;
     Ok(())
 }

@@ -11,15 +11,15 @@ impl Initializer for OAuth2StoreInitializer {
     }
     async fn after_routes(&self, router: AxumRouter, ctx: &AppContext) -> Result<AxumRouter> {
         // Get all the settings from the config
-        let settings = ctx
-            .config
-            .initializers
-            .clone()
-            .ok_or_else(|| Error::Message("Initializers config not configured for OAuth2".to_string()))?;
+        let settings = ctx.config.initializers.clone().ok_or_else(|| {
+            Error::Message("Initializers config not configured for OAuth2".to_string())
+        })?;
         // Get the oauth2 config in json format
         let oauth2_config_value = settings
             .get("oauth2")
-            .ok_or(Error::Message("Oauth2 config not found in Initializer configuration".to_string()))?
+            .ok_or(Error::Message(
+                "Oauth2 config not found in Initializer configuration".to_string(),
+            ))?
             .clone();
         // Convert the oauth2 config json to OAuth2Config
         let oauth2_config: Config = oauth2_config_value.try_into().map_err(|e| {

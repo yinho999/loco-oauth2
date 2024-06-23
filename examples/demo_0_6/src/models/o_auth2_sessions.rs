@@ -1,13 +1,13 @@
-use sea_orm::entity::prelude::*;
 pub use super::_entities::o_auth2_sessions::{self, ActiveModel, Entity, Model};
+use super::users;
 use async_trait::async_trait;
 use chrono::Local;
 use loco_oauth2::{
     base_oauth2::basic::BasicTokenResponse, base_oauth2::TokenResponse,
     models::oauth2_sessions::OAuth2SessionsTrait,
 };
-use super::users;
 use loco_rs::prelude::*;
+use sea_orm::entity::prelude::*;
 
 impl ActiveModelBehavior for ActiveModel {
     // extend activemodel below (keep comment for generators)
@@ -73,8 +73,8 @@ impl OAuth2SessionsTrait<users::Model> for Model {
                     user_id: ActiveValue::set(user.id),
                     ..Default::default()
                 }
-                    .insert(&txn)
-                    .await?
+                .insert(&txn)
+                .await?
             }
         };
         txn.commit().await?;

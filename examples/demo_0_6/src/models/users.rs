@@ -1,12 +1,11 @@
+pub use super::_entities::users::{self, ActiveModel, Entity, Model};
+use super::o_auth2_sessions;
 use async_trait::async_trait;
 use chrono::offset::Local;
+use loco_oauth2::models::users::OAuth2UserTrait;
 use loco_rs::{auth::jwt, hash, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use super::o_auth2_sessions;
-pub use super::_entities::users::{self, ActiveModel, Entity, Model};
-use loco_oauth2::models::users::OAuth2UserTrait;
-
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LoginParams {
@@ -314,7 +313,6 @@ impl super::_entities::users::ActiveModel {
     }
 }
 
-
 #[async_trait]
 impl OAuth2UserTrait<OAuth2UserProfile> for Model {
     /// Asynchronously finds user by OAuth2 session id.
@@ -378,12 +376,12 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
                     password: ActiveValue::set(password_hash),
                     ..Default::default()
                 }
-                    .insert(&txn)
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Error while trying to create user: {e}");
-                        ModelError::Any(e.into())
-                    })?
+                .insert(&txn)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Error while trying to create user: {e}");
+                    ModelError::Any(e.into())
+                })?
             }
             // Do nothing if user exists
             Some(user) => user,
