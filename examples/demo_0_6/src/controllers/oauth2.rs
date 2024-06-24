@@ -1,7 +1,7 @@
 use axum_session::SessionNullPool;
 use loco_oauth2::controllers::{
     middleware::OAuth2CookieUser,
-    oauth2::{google_authorization_url, google_callback},
+    oauth2::{google_authorization_url, google_callback_cookie, google_callback_jwt},
 };
 use loco_rs::prelude::*;
 
@@ -29,9 +29,20 @@ pub fn routes() -> Routes {
     Routes::new()
         .prefix("api/oauth2")
         .add("/google", get(google_authorization_url::<SessionNullPool>))
+        // Route for the Cookie callback
         .add(
-            "/google/callback",
-            get(google_callback::<
+            "/google/callback/cookie",
+            get(google_callback_cookie::<
+                OAuth2UserProfile,
+                users::Model,
+                o_auth2_sessions::Model,
+                SessionNullPool,
+            >),
+        )
+        // Route for the JWT callback
+        .add(
+            "/google/callback/jwt",
+            get(google_callback_jwt::<
                 OAuth2UserProfile,
                 users::Model,
                 o_auth2_sessions::Model,

@@ -389,4 +389,18 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
         txn.commit().await?;
         Ok(user)
     }
+
+    /// Generates a JWT
+    /// # Arguments
+    /// * `secret` - JWT secret
+    /// * `expiration` - JWT expiration time
+    ///
+    /// # Returns
+    /// * `String` - JWT token
+    ///
+    /// # Errors
+    /// * `ModelError` - When could not generate the JWT
+    fn generate_jwt(&self, secret: &str, expiration: &u64) -> Result<String, ModelError> {
+        self.generate_jwt(secret, expiration)
+    }
 }
