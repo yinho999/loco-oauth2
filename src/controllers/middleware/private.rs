@@ -158,6 +158,8 @@ mod tests {
     use http::header::{HeaderValue, COOKIE};
     use loco_rs::config::{Config, Database, Logger, Middlewares, Server, Workers};
     use loco_rs::environment::Environment;
+    use loco_rs::storage::Storage;
+    use loco_rs::{cache, storage};
     use sea_orm::DatabaseConnection;
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -171,7 +173,7 @@ mod tests {
         AppContext {
             environment: Environment::Production,
             db: DatabaseConnection::default(),
-            redis: None,
+            queue: None,
             config: Config {
                 initializers: None,
                 logger: Logger::default(),
@@ -198,18 +200,20 @@ mod tests {
                     max_connections: 0,
                     connect_timeout: 0,
                     idle_timeout: 0,
+                    acquire_timeout: None,
                     auto_migrate: false,
                     dangerously_truncate: false,
                     dangerously_recreate: false,
                 },
-                redis: None,
                 auth: None,
                 workers: Workers::default(),
                 mailer: None,
                 settings: None,
+                queue: None,
             },
             mailer: None,
-            storage: None,
+            storage: Storage::single(storage::drivers::null::new()).into(),
+            cache: cache::Cache::new(cache::drivers::null::new()).into(),
         }
     }
     fn cookies_from_request(headers: &HeaderMap) -> impl Iterator<Item = Cookie<'static>> + '_ {

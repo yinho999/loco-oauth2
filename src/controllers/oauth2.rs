@@ -112,6 +112,64 @@ pub async fn callback<
     Ok(response)
 }
 
+/// Helper function to exchange the code for a token and then get the user profile
+/// then upsert the user and the session and set the token in a short live
+/// cookie Lastly, it will redirect the user to the protected URL
+/// # Generics
+/// * `T` - The user profile, should implement `DeserializeOwned` and `Send`
+/// * `U` - The user model, should implement `OAuth2UserTrait` and `ModelTrait`
+/// * `V` - The session model, should implement `OAuth2SessionsTrait` and `ModelTrait`
+/// * `W` - The database pool
+/// # Arguments
+/// * `ctx` - The application context
+/// * `session` - The axum session
+/// * `params` - The query parameters
+/// * `client` - The `AuthorizationCodeGrant` client
+/// # Returns
+/// * `Result<U>` - The user
+/// # Errors
+/// * `loco_rs::errors::Error`
+pub async fn callback_jwt<
+    T: DeserializeOwned + Send,
+    U: OAuth2UserTrait<T> + ModelTrait,
+    V: OAuth2SessionsTrait<U>,
+    W: DatabasePool + Clone + Debug + Sync + Send + 'static,
+>(
+    ctx: &AppContext,
+    session: Session<W>,
+    params: AuthParams,
+    client: &mut MutexGuard<'_, dyn GrantTrait>,
+) -> Result<U> {
+    // Get the CSRF token from the session
+    let csrf_token = session
+        .get::<String>("CSRF_TOKEN")
+        .ok_or_else(|| Error::BadRequest("CSRF token not found".to_string()))?;
+    // Exchange the code with a token
+    let (token, profile) = client
+        .verify_code_from_callback(params.code, params.state, csrf_token)
+        .await
+        .map_err(|e| Error::BadRequest(e.to_string()))?;
+    // Get the user profile
+    let profile = profile.json::<T>().await.map_err(|e| {
+        tracing::error!("Error getting profile: {:?}", e);
+        Error::InternalServerError
+    })?;
+    let user = U::upsert_with_oauth(&ctx.db, &profile)
+        .await
+        .map_err(|_e| {
+            tracing::error!("Error creating user");
+            Error::InternalServerError
+        })?;
+    V::upsert_with_oauth2(&ctx.db, &token, &user)
+        .await
+        .map_err(|_e| {
+            tracing::error!("Error creating session");
+            Error::InternalServerError
+        })?;
+
+    Ok(user)
+}
+
 /// The authorization URL for the `OAuth2` flow
 /// This will redirect the user to the `OAuth2` provider's login page
 /// and then to the callback URL
@@ -148,6 +206,7 @@ pub async fn google_authorization_url<T: DatabasePool + Clone + Debug + Sync + S
 /// * `T` - The user profile, should implement `DeserializeOwned` and `Send`
 /// * `U` - The user model, should implement `OAuth2UserTrait` and `ModelTrait`
 /// * `V` - The session model, should implement `OAuth2SessionsTrait` and `ModelTrait`
+/// * `W` - The database pool
 /// # Arguments
 /// * `ctx` - The application context
 /// * `session` - The axum session
@@ -159,7 +218,7 @@ pub async fn google_authorization_url<T: DatabasePool + Clone + Debug + Sync + S
 /// URL
 /// # Errors
 /// * `loco_rs::errors::Error`
-pub async fn google_callback<
+pub async fn google_callback_cookie<
     T: DeserializeOwned + Send,
     U: OAuth2UserTrait<T> + ModelTrait,
     V: OAuth2SessionsTrait<U>,
@@ -182,6 +241,51 @@ pub async fn google_callback<
     let response = callback::<T, U, V, W>(ctx, session, params, jar, &mut client).await?;
     drop(client);
     Ok(response)
+}
+
+/// The callback URL for the `OAuth2` flow
+/// This will exchange the code for a token and then get the user profile
+/// then upsert the user and the session and set the token in a short live
+/// cookie Lastly, it will redirect the user to the protected URL
+/// # Generics
+/// * `T` - The user profile, should implement `DeserializeOwned` and `Send`
+/// * `U` - The user model, should implement `OAuth2UserTrait` and `ModelTrait`
+/// * `V` - The session model, should implement `OAuth2SessionsTrait` and `ModelTrait`
+/// * `W` - The database pool
+/// # Arguments
+/// * `ctx` - The application context
+/// * `session` - The axum session
+/// * `params` - The query parameters
+/// * `oauth_store` - The `OAuth2ClientStore` extension
+/// # Return
+/// * `Result<impl IntoResponse>` - The response with the jwt token
+/// # Errors
+/// * `loco_rs::errors::Error`
+pub async fn google_callback_jwt<
+    T: DeserializeOwned + Send,
+    U: OAuth2UserTrait<T> + ModelTrait,
+    V: OAuth2SessionsTrait<U>,
+    W: DatabasePool + Clone + Debug + Sync + Send + 'static,
+>(
+    State(ctx): State<AppContext>,
+    session: Session<W>,
+    Query(params): Query<AuthParams>,
+    Extension(oauth2_store): Extension<OAuth2ClientStore>,
+) -> Result<impl IntoResponse> {
+    let mut client = oauth2_store
+        .get_authorization_code_client("google")
+        .await
+        .map_err(|e| {
+            tracing::error!("Error getting client: {:?}", e);
+            Error::InternalServerError
+        })?;
+    let jwt_secret = ctx.config.get_jwt_config()?;
+    let user = callback_jwt::<T, U, V, W>(&ctx, session, params, &mut client).await?;
+    drop(client);
+    let token = user
+        .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+        .or_else(|_| unauthorized("unauthorized!"))?;
+    Ok(token)
 }
 
 /// The protected URL for the `OAuth2` flow
