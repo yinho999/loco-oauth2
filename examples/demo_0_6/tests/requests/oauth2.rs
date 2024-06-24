@@ -179,7 +179,7 @@ async fn can_google_authorization_url() -> Result<(), Box<dyn std::error::Error>
 
 #[tokio::test]
 #[serial]
-async fn can_call_google_callback() -> Result<(), Box<dyn std::error::Error>> {
+async fn can_call_google_callback_cookie() -> Result<(), Box<dyn std::error::Error>> {
     let settings = set_default_url().await;
     // mock oauth2 server
     mock_oauth_server(&settings, true).await?;
@@ -202,7 +202,7 @@ async fn can_call_google_callback() -> Result<(), Box<dyn std::error::Error>> {
             .map(|(_, value)| value.to_string());
         // Test the google callback with csrf token and token
         let res = request
-            .get("/api/oauth2/google/callback")
+            .get("/api/oauth2/google/callback/cookie")
             .add_query_params(vec![
                 ("code", settings.code.clone()),
                 ("state", state.unwrap()),
@@ -244,7 +244,7 @@ async fn can_call_protect() -> Result<(), Box<dyn std::error::Error>> {
             .map(|(_, value)| value.to_string());
         // Test the google callback with csrf token and token
         let res = request
-            .get("/api/oauth2/google/callback")
+            .get("/api/oauth2/google/callback/cookie")
             .add_query_params(vec![
                 ("code", settings.code.clone()),
                 ("state", state.unwrap()),
@@ -298,7 +298,7 @@ async fn cannot_call_callback_twice_with_same_csrf_token() -> Result<(), Box<dyn
             .map(|(_, value)| value.to_string());
         // Test the google callback with csrf token and token
         let res = request
-            .get("/api/oauth2/google/callback")
+            .get("/api/oauth2/google/callback/cookie")
             .add_query_params(vec![
                 ("code", settings.code.clone()),
                 ("state", state.clone().unwrap()),
@@ -312,7 +312,7 @@ async fn cannot_call_callback_twice_with_same_csrf_token() -> Result<(), Box<dyn
         );
         // Test the google callback with csrf token and token
         let res = request
-            .get("/api/oauth2/google/callback")
+            .get("/api/oauth2/google/callback/cookie")
             .add_query_params(vec![
                 ("code", settings.code.clone()),
                 ("state", state.clone().unwrap()),
@@ -334,7 +334,7 @@ pub async fn cannot_call_google_callback_without_csrf_token(
     testing::request::<App, _, _>(|request, _ctx| async move {
         // Test the google callback without csrf token
         let res = request
-            .get("/api/oauth2/google/callback")
+            .get("/api/oauth2/google/callback/cookie")
             .add_query_params(vec![
                 ("code", settings.code.clone()),
                 ("state", "test_state".to_string()),
