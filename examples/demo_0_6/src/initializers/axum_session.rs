@@ -11,16 +11,16 @@ impl Initializer for AxumSessionInitializer {
     }
 
     async fn after_routes(&self, router: AxumRouter, _ctx: &AppContext) -> Result<AxumRouter> {
+        // Create the session store configuration
         let session_config =
             axum_session::SessionConfig::default().with_table_name("sessions_table");
-
+        // Create the session store
         let session_store =
             axum_session::SessionStore::<axum_session::SessionNullPool>::new(None, session_config)
                 .await
                 .unwrap();
-
+        // Add the session store to the AxumRouter as an extension
         let router = router.layer(axum_session::SessionLayer::new(session_store));
-
         Ok(router)
     }
 }

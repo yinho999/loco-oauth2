@@ -1,6 +1,8 @@
 use std::env;
 
-use demo::{app::App, models::users::OAuth2UserProfile, views::auth::LoginResponse};
+use crate::requests::prepare_data;
+use demo_0_6::views::user::CurrentResponse;
+use demo_0_6::{app::App, models::users::OAuth2UserProfile, views::auth::LoginResponse};
 use loco_rs::testing;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -49,23 +51,23 @@ impl OAuth2Settings {
         let user_profile = OAuth2UserProfile {
             email: "test_email@gmail.com".to_string(),
             name: "test_name".to_string(),
-            picture: "test_picture".to_string(),
+            picture: Some("test_picture".to_string()),
             sub: "test_sub".to_string(),
             email_verified: true,
-            family_name: "test_family_name".to_string(),
-            given_name: "test_given_name".to_string(),
-            locale: "test_locale".to_string(),
+            family_name: Some("test_family_name".to_string()),
+            given_name: Some("test_given_name".to_string()),
+            locale: Some("test_locale".to_string()),
         };
         Self {
             client_id: "test_client_id".to_string(),
             client_secret: "test_client_secret".to_string(),
             code: "test_code".to_string(),
-            auth_url: format!("{}/auth_url", url),
-            token_url: format!("{}/token_url", url),
-            redirect_url: format!("{}/redirect_url", url),
-            profile_url: format!("{}/profile_url", url),
-            protected_url: format!("{}/oauth/protected_url", url),
-            scope: format!("{}/scope_1", url),
+            auth_url: format!("{url}/auth_url",),
+            token_url: format!("{url}/token_url",),
+            redirect_url: format!("{url}/redirect_url",),
+            profile_url: format!("{url}/profile_url",),
+            protected_url: format!("{url}/oauth/protected_url",),
+            scope: format!("{url}/scope_1",),
             exchange_mock_body,
             profile_mock_body: user_profile,
             mock_server: server,
@@ -104,7 +106,7 @@ async fn mock_oauth_server(
     settings: &OAuth2Settings,
     expect_success: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let expected_calls = if expect_success { 1 } else { 0 };
+    let expected_calls = u64::from(expect_success);
     let token_form_body = vec![
         serde_urlencoded::to_string([("code", &settings.code)])?,
         serde_urlencoded::to_string([("redirect_uri", &settings.redirect_url)])?,
@@ -179,7 +181,7 @@ async fn can_google_authorization_url() -> Result<(), Box<dyn std::error::Error>
 
 #[tokio::test]
 #[serial]
-async fn can_call_google_callback() -> Result<(), Box<dyn std::error::Error>> {
+async fn can_call_google_callback_cookie() -> Result<(), Box<dyn std::error::Error>> {
     let settings = set_default_url().await;
     // mock oauth2 server
     mock_oauth_server(&settings, true).await?;
@@ -202,7 +204,7 @@ async fn can_call_google_callback() -> Result<(), Box<dyn std::error::Error>> {
             .map(|(_, value)| value.to_string());
         // Test the google callback with csrf token and token
         let res = request
-            .get("/api/oauth2/google/callback")
+            .get("/api/oauth2/google/callback/cookie")
             .add_query_params(vec![
                 ("code", settings.code.clone()),
                 ("state", state.unwrap()),
@@ -218,14 +220,13 @@ async fn can_call_google_callback() -> Result<(), Box<dyn std::error::Error>> {
     .await;
     Ok(())
 }
-
 #[tokio::test]
 #[serial]
-async fn can_call_protect() -> Result<(), Box<dyn std::error::Error>> {
+async fn can_call_google_callback_jwt() -> Result<(), Box<dyn std::error::Error>> {
     let settings = set_default_url().await;
     // mock oauth2 server
     mock_oauth_server(&settings, true).await?;
-    testing::request::<App, _, _>(|request, ctx| async move {
+    testing::request::<App, _, _>(|request, _ctx| async move {
         // Get the authorization url from the server
         let auth_res = request.get("/api/oauth2/google").await;
         // Cookie for csrf token
@@ -244,7 +245,54 @@ async fn can_call_protect() -> Result<(), Box<dyn std::error::Error>> {
             .map(|(_, value)| value.to_string());
         // Test the google callback with csrf token and token
         let res = request
-            .get("/api/oauth2/google/callback")
+            .get("/api/oauth2/google/callback/jwt")
+            .add_query_params(vec![
+                ("code", settings.code.clone()),
+                ("state", state.unwrap()),
+            ])
+            .add_cookies(auth_cookie)
+            .await;
+        assert_eq!(res.status_code(), 200);
+        let (auth_key, auth_value) = prepare_data::auth_header(&res.text());
+        let response = request
+            .get("/api/user/current")
+            .add_header(auth_key, auth_value)
+            .await;
+        assert_eq!(response.status_code(), 200);
+        let login_response = response.json::<CurrentResponse>();
+        assert_eq!(login_response.name, settings.profile_mock_body.name);
+        assert_eq!(login_response.email, settings.profile_mock_body.email);
+    })
+    .await;
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn can_call_protect() -> Result<(), Box<dyn std::error::Error>> {
+    let settings = set_default_url().await;
+    // mock oauth2 server
+    mock_oauth_server(&settings, true).await?;
+    testing::request::<App, _, _>(|request, _ctx| async move {
+        // Get the authorization url from the server
+        let auth_res = request.get("/api/oauth2/google").await;
+        // Cookie for csrf token
+        let auth_cookie = auth_res.cookies();
+        // Get the authorization url from the response HTML
+        let mut auth_url = String::new();
+        let re = Regex::new(r#"([^"]*)"#).unwrap();
+        for cap in re.captures_iter(&auth_res.text()) {
+            auth_url = cap[1].to_string();
+        }
+        // Extract the state from the auth_url
+        let state = Url::parse(&auth_url)
+            .unwrap()
+            .query_pairs()
+            .find(|(key, _)| key == "state")
+            .map(|(_, value)| value.to_string());
+        // Test the google callback with csrf token and token
+        let res = request
+            .get("/api/oauth2/google/callback/cookie")
             .add_query_params(vec![
                 ("code", settings.code.clone()),
                 ("state", state.unwrap()),
@@ -267,7 +315,7 @@ async fn can_call_protect() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(
             res.json::<LoginResponse>().name,
             settings.profile_mock_body.name
-        )
+        );
     })
     .await;
     Ok(())
@@ -298,7 +346,7 @@ async fn cannot_call_callback_twice_with_same_csrf_token() -> Result<(), Box<dyn
             .map(|(_, value)| value.to_string());
         // Test the google callback with csrf token and token
         let res = request
-            .get("/api/oauth2/google/callback")
+            .get("/api/oauth2/google/callback/cookie")
             .add_query_params(vec![
                 ("code", settings.code.clone()),
                 ("state", state.clone().unwrap()),
@@ -312,7 +360,7 @@ async fn cannot_call_callback_twice_with_same_csrf_token() -> Result<(), Box<dyn
         );
         // Test the google callback with csrf token and token
         let res = request
-            .get("/api/oauth2/google/callback")
+            .get("/api/oauth2/google/callback/cookie")
             .add_query_params(vec![
                 ("code", settings.code.clone()),
                 ("state", state.clone().unwrap()),
@@ -334,7 +382,7 @@ pub async fn cannot_call_google_callback_without_csrf_token(
     testing::request::<App, _, _>(|request, _ctx| async move {
         // Test the google callback without csrf token
         let res = request
-            .get("/api/oauth2/google/callback")
+            .get("/api/oauth2/google/callback/cookie")
             .add_query_params(vec![
                 ("code", settings.code.clone()),
                 ("state", "test_state".to_string()),
@@ -345,7 +393,75 @@ pub async fn cannot_call_google_callback_without_csrf_token(
     .await;
     Ok(())
 }
-
+#[tokio::test]
+#[serial]
+async fn cannot_call_google_callback_jwt_twice_with_same_csrf_token(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let settings = set_default_url().await;
+    // mock oauth2 server
+    mock_oauth_server(&settings, true).await?;
+    testing::request::<App, _, _>(|request, _ctx| async move {
+        // Get the authorization url from the server
+        let auth_res = request.get("/api/oauth2/google").await;
+        // Cookie for csrf token
+        let auth_cookie = auth_res.cookies();
+        // Get the authorization url from the response HTML
+        let mut auth_url = String::new();
+        let re = Regex::new(r#"([^"]*)"#).unwrap();
+        for cap in re.captures_iter(&auth_res.text()) {
+            auth_url = cap[1].to_string();
+        }
+        // Extract the state from the auth_url
+        let state = Url::parse(&auth_url)
+            .unwrap()
+            .query_pairs()
+            .find(|(key, _)| key == "state")
+            .map(|(_, value)| value.to_string());
+        // Test the google callback jwt with csrf token and token
+        let res = request
+            .get("/api/oauth2/google/callback/jwt")
+            .add_query_params(vec![
+                ("code", settings.code.clone()),
+                ("state", state.clone().unwrap()),
+            ])
+            .add_cookies(auth_cookie.clone())
+            .await;
+        assert_eq!(res.status_code(), 200);
+        // Test the google callback jwt with csrf token and token
+        let res = request
+            .get("/api/oauth2/google/callback/jwt")
+            .add_query_params(vec![
+                ("code", settings.code.clone()),
+                ("state", state.clone().unwrap()),
+            ])
+            .add_cookies(auth_cookie)
+            .await;
+        assert_eq!(res.status_code(), 400);
+    })
+    .await;
+    Ok(())
+}
+#[tokio::test]
+#[serial]
+pub async fn cannot_call_google_callback_jwt_without_csrf_token(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let settings = set_default_url().await;
+    // Mock oauth2 server
+    mock_oauth_server(&settings, false).await?;
+    testing::request::<App, _, _>(|request, _ctx| async move {
+        // Test the google callback jwt without csrf token
+        let res = request
+            .get("/api/oauth2/google/callback/jwt")
+            .add_query_params(vec![
+                ("code", settings.code.clone()),
+                ("state", "test_state".to_string()),
+            ])
+            .await;
+        assert_eq!(res.status_code(), 400);
+    })
+    .await;
+    Ok(())
+}
 #[tokio::test]
 #[serial]
 pub async fn cannot_call_protect_without_cookie() -> Result<(), Box<dyn std::error::Error>> {

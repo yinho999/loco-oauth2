@@ -1,11 +1,11 @@
-name: examples/demo
+name: examples/demo_0_6
 
 on:
   push:
     branches:
       - master
     paths:
-      - examples/demo/**
+      - examples/demo_0_6/**
   pull_request:
     branches:
       - master
@@ -32,7 +32,7 @@ jobs:
           override: true
           components: rustfmt
       - run: cargo fmt --all -- --check
-        working-directory: ./examples/demo
+        working-directory: ./examples/demo_0_6
 
   clippy:
     name: Run Clippy
@@ -54,7 +54,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Run cargo clippy
         run: cargo clippy -- -W clippy::nursery -W clippy::pedantic -W rust-2018-idioms -W rust-2021-compatibility
-        working-directory: ./examples/demo
+        working-directory: ./examples/demo_0_6
   
   test:
     name: Run Tests
@@ -97,7 +97,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Run cargo test
         run: cargo test --all-features --all
-        working-directory: ./examples/demo
+        working-directory: ./examples/demo_0_6
         env:
           REDIS_URL: redis://localhost:${{job.services.redis.ports[6379]}}
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres_test

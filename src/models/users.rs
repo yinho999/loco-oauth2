@@ -30,4 +30,16 @@ pub trait OAuth2UserTrait<T>: Clone {
     /// # Errors
     /// * `ModelError` -  When could not save the user into the DB
     async fn upsert_with_oauth(db: &DatabaseConnection, profile: &T) -> ModelResult<Self>;
+
+    /// Generates a JWT token for the user.
+    /// # Arguments
+    /// * `secret` - JWT secret
+    /// * `expiration` - JWT expiration time
+    ///
+    /// # Returns
+    /// * `String` - JWT token
+    ///
+    /// # Errors
+    /// * `ModelError` - When could not generate the JWT token
+    fn generate_jwt(&self, secret: &str, expiration: &u64) -> ModelResult<String>;
 }

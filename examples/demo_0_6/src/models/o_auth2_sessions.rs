@@ -1,19 +1,17 @@
+pub use super::_entities::o_auth2_sessions::{self, ActiveModel, Entity, Model};
+use super::users;
 use async_trait::async_trait;
 use chrono::Local;
 use loco_oauth2::{
     base_oauth2::basic::BasicTokenResponse, base_oauth2::TokenResponse,
     models::oauth2_sessions::OAuth2SessionsTrait,
 };
-use loco_rs::model::{ModelError, ModelResult};
-use sea_orm::{entity::prelude::*, ActiveValue, TransactionTrait};
-
-pub use super::_entities::o_auth2_sessions::{self, ActiveModel, Entity, Model};
-use crate::models::users;
+use loco_rs::prelude::*;
+use sea_orm::entity::prelude::*;
 
 impl ActiveModelBehavior for ActiveModel {
     // extend activemodel below (keep comment for generators)
 }
-
 #[async_trait]
 impl OAuth2SessionsTrait<users::Model> for Model {
     /// Check if a session is expired from the database

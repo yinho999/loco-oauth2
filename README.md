@@ -44,30 +44,35 @@ Or Cargo.toml
 
 ```toml
 [dependencies]
-loco-oauth2 = "0.1.0"
+loco-oauth2 = "0.2.0"
 ```
 
 <a name="glossary"></a>
 
 ## Glossary
 
-|                           |                                                                                                          |
-|---------------------------|----------------------------------------------------------------------------------------------------------|
-| `OAuth2ClientGrantEnum`   | Enum for the different OAuth2 grants, an OAuth2 Client will belong to one of the `OAuth2ClientGrantEnum` |
-| `OAuth2ClientStore`       | Abstraction implementation for managing one or more OAuth2 clients.                                      |
-| `AuthorizationCodeClient` | A client that uses the Authorization Code Grant.                                                         |
+|                              |                                                                                                          |
+|------------------------------|----------------------------------------------------------------------------------------------------------|
+| `OAuth2ClientGrantEnum`      | Enum for the different OAuth2 grants, an OAuth2 Client will belong to one of the `OAuth2ClientGrantEnum` |
+| `OAuth2ClientStore`          | Abstraction implementation for managing one or more OAuth2 clients.                                      |
+| `authorization_code::Client` | A client that uses the Authorization Code Grant.                                                         |
 
 <a name="configuration-authorization-code-grant"></a>
 
 ## Configuration (Authorization Code Grant)
 
-### Generate a private cookie secret key (Optional)
+### Generate a private cookie secret key 
 
 secret_key is used to encrypt the private cookie jar. It must be more than 64 bytes. If not provided, it will be
 auto-generated.
 Here is an example of how to generate a private cookie secret key.
-
+```toml
+# Cargo.toml
+rand = "0.9.0-alpha.1"
+axum-extra = { version = "0.9.3", features = ["cookie-private"]}
+```
 ```rust
+// src/main.rs
 use axum_extra::extract::cookie::Key;
 use rand::{Rng, thread_rng};
 
@@ -97,11 +102,10 @@ the provider which should set within `Authorised redirect URIs` section when cre
 
 ```yaml
 # config/*.yaml
-# Custom Settings
-settings:
-  # OAuth2 Configuration
+# Initializers Configuration
+initializers:
   oauth2:
-    secret_key: {{get_env(name="OAUTH_PRIVATE_KEY", default="144, 76, 183, 1, 15, 184, 233, 174, 214, 251, 190, 186, 122, 61, 74, 84, 225, 110, 189, 115, 10, 251, 133, 128, 52, 46, 15, 66, 85, 1, 245, 73, 27, 113, 189, 15, 209, 205, 61, 100, 73, 31, 18, 58, 235, 105, 141, 36, 70, 92, 231, 151, 27, 32, 243, 117, 30, 244, 110, 89, 233, 196, 137, 130")}} # Optional, key for Private Cookie Jar, must be more than 64 bytes. Auto-generated if not provided
+    secret_key: {{get_env(name="OAUTH_PRIVATE_KEY", default="144, 76, 183, 1, 15, 184, 233, 174, 214, 251, 190, 186, 122, 61, 74, 84, 225, 110, 189, 115, 10, 251, 133, 128, 52, 46, 15, 66, 85, 1, 245, 73, 27, 113, 189, 15, 209, 205, 61, 100, 73, 31, 18, 58, 235, 105, 141, 36, 70, 92, 231, 151, 27, 32, 243, 117, 30, 244, 110, 89, 233, 196, 137, 130")}} # Optional, key for Private Cookie Jar, must be more than 64 bytes
     authorization_code: # Authorization code grant type
       - client_identifier: google # Identifier for the OAuth2 provider. Replace 'google' with your provider's name if different, must be unique within the oauth2 config.
         client_credentials:
@@ -110,13 +114,13 @@ settings:
         url_config:
           auth_url: {{get_env(name="AUTH_URL", default="https://accounts.google.com/o/oauth2/auth")}} # authorization endpoint from the provider
           token_url: {{get_env(name="TOKEN_URL", default="https://www.googleapis.com/oauth2/v3/token")}} # token endpoint from the provider for exchanging the authorization code for an access token
-          redirect_url: {{get_env(name="REDIRECT_URL", default="http://localhost:3000/api/oauth2/google/callback")}} # server callback endpoint for the provider
+          redirect_url: {{get_env(name="REDIRECT_URL", default="http://localhost:3000/api/oauth2/google/callback/cookie")}} # server callback endpoint for the provider, for default jwt route use 'default="http://localhost:3000/api/oauth2/google/callback/cookie"'
           profile_url: {{get_env(name="PROFILE_URL", default="https://openidconnect.googleapis.com/v1/userinfo")}} # user profile endpoint from the provider for getting user data
           scopes:
             - {{get_env(name="SCOPES_1", default="https://www.googleapis.com/auth/userinfo.email")}} # Scopes for requesting access to user data
             - {{get_env(name="SCOPES_2", default="https://www.googleapis.com/auth/userinfo.profile")}} # Scopes for requesting access to user data
         cookie_config:
-          protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:3000/api/oauth2/protected")}} # Optional - For redirecting to protect url in cookie to prevent XSS attack
+          protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:3000/api/oauth2/protected")}} # Optional for jwt - For redirecting to protect url in cookie to prevent XSS attack
         timeout_seconds: 600 # Optional, default 600 seconds
 ```
 
@@ -128,7 +132,11 @@ We are going to use the initializer functionality in Loco framework to initializ
 
 Firstly we need to create a session store for the storing the csrf token. We will use the `AxumSessionStore` for this
 purpose. We will create a new initializer struct for `AxumSessionStore` and implement the `Initializer` trait.
-
+```toml
+# Cargo.toml
+# axum sessions
+axum_session = { version = "0.14.0" }
+```
 ```rust 
 // src/initializers/axum_session.rs
 use async_trait::async_trait;
@@ -166,7 +174,7 @@ add it to the `AxumRouter` as an extension.
 ```rust
 // src/initializers/oauth2.rs
 use axum::{async_trait, Extension, Router as AxumRouter};
-use loco_oauth2::{config::OAuth2Config, OAuth2ClientStore};
+use loco_oauth2::{config::Config, OAuth2ClientStore};
 use loco_rs::prelude::*;
 
 pub struct OAuth2StoreInitializer;
@@ -178,31 +186,30 @@ impl Initializer for OAuth2StoreInitializer {
     }
     async fn after_routes(&self, router: AxumRouter, ctx: &AppContext) -> Result<AxumRouter> {
         // Get all the settings from the config
-        let settings = ctx
-            .config
-            .settings
-            .clone()
-            .ok_or_else(|| Error::Message("settings config not configured".to_string()))?;
+        let settings = ctx.config.initializers.clone().ok_or_else(|| {
+            Error::Message("Initializers config not configured for OAuth2".to_string())
+        })?;
         // Get the oauth2 config in json format
         let oauth2_config_value = settings
             .get("oauth2")
-            .ok_or(Error::Message("oauth2 config not found".to_string()))?
+            .ok_or(Error::Message(
+                "Oauth2 config not found in Initializer configuration".to_string(),
+            ))?
             .clone();
         // Convert the oauth2 config json to OAuth2Config
-        let oauth2_config: OAuth2Config = oauth2_config_value.try_into().map_err(|e| {
-            tracing::error!(error = ?e, "could not convert oauth2 config");
-            Error::Message("could not convert oauth2 config".to_string())
+        let oauth2_config: Config = oauth2_config_value.try_into().map_err(|e| {
+            tracing::error!(error = ?e, "could not convert oauth2 config from yaml");
+            Error::Message("could not convert oauth2 config from yaml".to_string())
         })?;
         // Create the OAuth2ClientStore
         let oauth2_store = OAuth2ClientStore::new(oauth2_config).map_err(|e| {
-            tracing::error!(error = ?e, "could not create oauth2 store");
-            Error::Message("could not create oauth2 store".to_string())
+            tracing::error!(error = ?e, "could not create oauth2 store from config");
+            Error::Message("could not create oauth2 store from config".to_string())
         })?;
         // Add the OAuth2ClientStore to the AxumRouter as an extension
         Ok(router.layer(Extension(oauth2_store)))
     }
 }
-
 ```
 
 Do not forget to add the initializers to the `App` struct.
@@ -306,19 +313,20 @@ For more information on scopes, see
 ```rust
 // src/models/user.rs
 /// `OAuth2UserProfile` user profile information via scopes
+/// https://developers.google.com/identity/openid-connect/openid-connect#obtainuserinfo
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OAuth2UserProfile {
     // https://www.googleapis.com/auth/userinfo.email	See your primary Google Account email address
     pub email: String,
-    // Fields below 
     // https://www.googleapis.com/auth/userinfo.profile   See your personal info, including any personal info you've made publicly available
     pub name: String,
+    // sub field is unique
     pub sub: String,
-    pub given_name: String,
-    pub family_name: String,
-    pub picture: String,
     pub email_verified: bool,
-    pub locale: String,
+    pub given_name: Option<String>, // Some accounts don't have this field
+    pub family_name: Option<String>, // Some accounts don't have this field
+    pub picture: Option<String>, // Some accounts don't have this field
+    pub locale: Option<String>, // Some accounts don't have this field
 }
 ```
 
@@ -329,6 +337,10 @@ Next we need to implement 2 traits for the `users::Model` model and the `o_auth2
 ```rust
 // src/models/users.rs
 use loco_oauth2::models::users::OAuth2UserTrait;
+use loco_rs::{auth::jwt, hash, prelude::*};
+use super::o_auth2_sessions;
+use async_trait::async_trait;
+use chrono::offset::Local;
 
 #[async_trait]
 impl OAuth2UserTrait<OAuth2UserProfile> for Model {
@@ -406,7 +418,22 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
         txn.commit().await?;
         Ok(user)
     }
+
+    /// Generates a JWT
+    /// # Arguments
+    /// * `secret` - JWT secret
+    /// * `expiration` - JWT expiration time
+    ///
+    /// # Returns
+    /// * `String` - JWT token
+    ///
+    /// # Errors
+    /// * `ModelError` - When could not generate the JWT
+    fn generate_jwt(&self, secret: &str, expiration: &u64) -> ModelResult<String> {
+        self.generate_jwt(secret, expiration)
+    }
 }
+
 
 ```
 
@@ -414,9 +441,16 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
 
 ```rust
 // src/models/o_auth2_sessions.rs
+pub use super::_entities::o_auth2_sessions::{self, ActiveModel, Entity, Model};
+use super::users;
+use async_trait::async_trait;
+use chrono::Local;
 use loco_oauth2::{
-    basic::BasicTokenResponse, models::oauth2_sessions::OAuth2SessionsTrait, TokenResponse,
+    base_oauth2::basic::BasicTokenResponse, base_oauth2::TokenResponse,
+    models::oauth2_sessions::OAuth2SessionsTrait,
 };
+use loco_rs::prelude::*;
+use sea_orm::entity::prelude::*;
 
 #[async_trait]
 impl OAuth2SessionsTrait<users::Model> for Model {
@@ -496,7 +530,9 @@ impl OAuth2SessionsTrait<users::Model> for Model {
 We need to implement 3 controllers for the OAuth2 flow.
 
 `authorization_url` - This controller is used to get the authorization URL to redirect the user to the OAuth2 provider.
-`callback` - This controller is used to handle the callback from the OAuth2 provider.
+
+`callback` - This controller is used to handle the callback from the OAuth2 provider. We can use either return a `PrivateCookieJar`(which redirects to `protected` route) or a `JWT` token.
+
 `protected` - This controller is used to protect the route from unauthorized access.
 
 ### `OAuth2Controller` Example
@@ -533,11 +569,12 @@ pub async fn google_authorization_url(
         })?;
     // Get the authorization URL and save the csrf token in the session
     let auth_url = get_authorization_url(session, &mut client).await;
+    drop(client);
     Ok(auth_url)
 }
 ```
 
-### `CallbackController` Example
+### `CallbackController Cookie` Example
 
 ```rust
 use axum_session::SessionNullPool;
@@ -561,7 +598,7 @@ use crate::models::{o_auth2_sessions, users, users::OAuth2UserProfile};
 /// URL
 /// # Errors
 /// * `loco_rs::errors::Error`
-pub async fn google_callback(
+pub async fn google_callback_cookie(
     State(ctx): State<AppContext>,
     session: Session<SessionNullPool>,
     Query(params): Query<AuthParams>,
@@ -578,7 +615,53 @@ pub async fn google_callback(
         })?;
     // This function will validate the state from the callback. Then it will exchange the code for a token and then get the user profile. After that, the function will upsert the user and the session and set the token in a short live cookie and save the cookie in the private cookie jar. Lastly, the function will create a response with the short live cookie and the redirect to the protected URL
     let response = callback::<OAuth2UserProfile, users::Model, o_auth2_sessions::Model, SessionNullPool, >(ctx, session, params, jar, &mut client).await?;
+    drop(client);
     Ok(response)
+}
+```
+
+### `CallbackController JWT` Example - SPA applications
+```rust
+/// The callback URL for the `OAuth2` flow
+/// This will exchange the code for a token and then get the user profile
+/// then upsert the user and the session and set the token in a short live
+/// cookie Lastly, it will redirect the user to the protected URL
+/// # Generics
+/// * `T` - The user profile, should implement `DeserializeOwned` and `Send`
+/// * `U` - The user model, should implement `OAuth2UserTrait` and `ModelTrait`
+/// * `V` - The session model, should implement `OAuth2SessionsTrait` and `ModelTrait`
+/// * `W` - The database pool
+/// # Arguments
+/// * `ctx` - The application context
+/// * `session` - The axum session
+/// * `params` - The query parameters
+/// * `oauth2_store` - The `OAuth2ClientStore` extension
+/// # Return
+/// * `Result<impl IntoResponse>` - The response with the jwt token
+/// # Errors
+/// * `loco_rs::errors::Error`
+pub async fn google_callback_jwt(
+    State(ctx): State<AppContext>,
+    session: Session<SessionNullPool>,
+    Query(params): Query<AuthParams>,
+    Extension(oauth2_store): Extension<OAuth2ClientStore>,
+) -> Result<impl IntoResponse> {
+    let mut client = oauth2_store
+        .get_authorization_code_client("google")
+        .await
+        .map_err(|e| {
+            tracing::error!("Error getting client: {:?}", e);
+            Error::InternalServerError
+        })?;
+    // Get JWT secret from the config
+    let jwt_secret = ctx.config.get_jwt_config()?;
+    let user = callback_jwt::<OAuth2UserProfile, users::Model, o_auth2_sessions::Model, SessionNullPool>(&ctx, session, params, &mut client).await?;
+    drop(client);
+    let token = user
+        .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+        .or_else(|_| unauthorized("unauthorized!"))?;
+    // Return jwt token
+    Ok(token)
 }
 ```
 
@@ -596,7 +679,7 @@ async fn protected(
     State(ctx): State<AppContext>,
     // Extract the user from the Cookie via middleware
     user: OAuth2CookieUser<OAuth2UserProfile, users::Model, o_auth2_sessions::Model>,
-) -> Result<impl IntoResponse> {
+) -> Result<Response> {
     let user: &users::Model = user.as_ref();
     let jwt_secret = ctx.config.get_jwt_config()?;
     // Generate a JWT token
@@ -608,16 +691,17 @@ async fn protected(
 }
 ```
 
-### Google boilerplate Example
+### Google boilerplate Example - Cookie
 
 Since we are using Google OAuth2 provider, there is a google boilerplate code to get the authorization URL and the
-callback
+callback cookie.
 
 ```rust
+// src/controllers/oauth2.rs
 use axum_session::SessionNullPool;
 use loco_oauth2::controllers::{
     middleware::OAuth2CookieUser,
-    oauth2::{google_authorization_url, google_callback},
+    oauth2::{google_authorization_url, google_callback_cookie},
 };
 use loco_rs::prelude::*;
 
@@ -630,7 +714,7 @@ async fn protected(
     State(ctx): State<AppContext>,
     // Extract the user from the Cookie via middleware
     user: OAuth2CookieUser<OAuth2UserProfile, users::Model, o_auth2_sessions::Model>,
-) -> Result<Json<LoginResponse>> {
+) -> Result<Response> {
     let user: &users::Model = user.as_ref();
     let jwt_secret = ctx.config.get_jwt_config()?;
     // Generate a JWT token
@@ -645,9 +729,10 @@ pub fn routes() -> Routes {
     Routes::new()
         .prefix("api/oauth2")
         .add("/google", get(google_authorization_url::<SessionNullPool>))
+        // Route for the Cookie callback
         .add(
-            "/google/callback",
-            get(google_callback::<
+            "/google/callback/cookie",
+            get(google_callback_cookie::<
                 OAuth2UserProfile,
                 users::Model,
                 o_auth2_sessions::Model,
@@ -655,5 +740,40 @@ pub fn routes() -> Routes {
             >),
         )
         .add("/protected", get(protected))
+}
+```
+
+### Google boilerplate Example - JWT
+
+Since we are using Google OAuth2 provider, there is a google boilerplate code to get the authorization URL and the callback jwt.
+
+```rust
+// src/controllers/oauth2.rs
+use axum_session::SessionNullPool;
+use loco_oauth2::controllers::{
+    oauth2::{google_authorization_url, google_callback_jwt},
+};
+use loco_rs::prelude::*;
+
+use crate::{
+    models::{o_auth2_sessions, users, users::OAuth2UserProfile},
+    views::auth::LoginResponse,
+};
+
+
+pub fn routes() -> Routes {
+    Routes::new()
+        .prefix("api/oauth2")
+        .add("/google", get(google_authorization_url::<SessionNullPool>))
+        // Route for the JWT callback
+        .add(
+            "/google/callback/jwt",
+            get(google_callback_jwt::<
+                OAuth2UserProfile,
+                users::Model,
+                o_auth2_sessions::Model,
+                SessionNullPool,
+            >),
+        )
 }
 ```
