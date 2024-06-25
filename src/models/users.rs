@@ -41,5 +41,5 @@ pub trait OAuth2UserTrait<T>: Clone {
     ///
     /// # Errors
     /// * `ModelError` - When could not generate the JWT token
-    fn generate_jwt(&self, secret: &str, expiration: &u64) -> Result<String, ModelError>;
+    fn generate_jwt(&self, secret: &str, expiration: &u64) -> ModelResult<String>;
 }

@@ -177,7 +177,7 @@ pub async fn callback_jwt<
 /// * `T` - The database pool
 /// # Arguments
 /// * `session` - The axum session
-/// * `oauth_store` - The `OAuth2ClientStore` extension
+/// * `oauth2_store` - The `OAuth2ClientStore` extension
 /// # Returns
 /// The HTML response with the link to the `OAuth2` provider's login page
 /// # Errors
@@ -212,7 +212,7 @@ pub async fn google_authorization_url<T: DatabasePool + Clone + Debug + Sync + S
 /// * `session` - The axum session
 /// * `params` - The query parameters
 /// * `jar` - The oauth2 private cookie jar
-/// * `oauth_store` - The `OAuth2ClientStore` extension
+/// * `oauth2_store` - The `OAuth2ClientStore` extension
 /// # Returns
 /// The response with the short live cookie and the redirect to the protected
 /// URL
@@ -256,7 +256,7 @@ pub async fn google_callback_cookie<
 /// * `ctx` - The application context
 /// * `session` - The axum session
 /// * `params` - The query parameters
-/// * `oauth_store` - The `OAuth2ClientStore` extension
+/// * `oauth2_store` - The `OAuth2ClientStore` extension
 /// # Return
 /// * `Result<impl IntoResponse>` - The response with the jwt token
 /// # Errors

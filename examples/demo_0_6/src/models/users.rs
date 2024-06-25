@@ -22,10 +22,10 @@ pub struct OAuth2UserProfile {
     // https://www.googleapis.com/auth/userinfo.profile   See your personal info, including any personal info you've made publicly available
     pub name: String,
     pub sub: String,
+    pub email_verified: bool,
     pub given_name: Option<String>,
     pub family_name: Option<String>,
     pub picture: Option<String>,
-    pub email_verified: bool,
     pub locale: Option<String>,
 }
 
@@ -400,7 +400,7 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
     ///
     /// # Errors
     /// * `ModelError` - When could not generate the JWT
-    fn generate_jwt(&self, secret: &str, expiration: &u64) -> Result<String, ModelError> {
+    fn generate_jwt(&self, secret: &str, expiration: &u64) -> ModelResult<String> {
         self.generate_jwt(secret, expiration)
     }
 }
