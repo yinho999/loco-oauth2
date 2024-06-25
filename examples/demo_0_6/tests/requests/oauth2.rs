@@ -1,5 +1,7 @@
 use std::env;
 
+use crate::requests::prepare_data;
+use demo_0_6::views::user::CurrentResponse;
 use demo_0_6::{app::App, models::users::OAuth2UserProfile, views::auth::LoginResponse};
 use loco_rs::testing;
 use regex::Regex;
@@ -10,8 +12,6 @@ use wiremock::{
     matchers::{basic_auth, bearer_token, body_string_contains, method, path},
     Mock, MockServer, ResponseTemplate,
 };
-use demo_0_6::views::user::CurrentResponse;
-use crate::requests::prepare_data;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 struct ExchangeMockBody {
@@ -263,7 +263,7 @@ async fn can_call_google_callback_jwt() -> Result<(), Box<dyn std::error::Error>
         assert_eq!(login_response.name, settings.profile_mock_body.name);
         assert_eq!(login_response.email, settings.profile_mock_body.email);
     })
-        .await;
+    .await;
     Ok(())
 }
 
@@ -395,8 +395,8 @@ pub async fn cannot_call_google_callback_without_csrf_token(
 }
 #[tokio::test]
 #[serial]
-async fn cannot_call_google_callback_jwt_twice_with_same_csrf_token() -> Result<(), Box<dyn std::error::Error>>
-{
+async fn cannot_call_google_callback_jwt_twice_with_same_csrf_token(
+) -> Result<(), Box<dyn std::error::Error>> {
     let settings = set_default_url().await;
     // mock oauth2 server
     mock_oauth_server(&settings, true).await?;
@@ -438,7 +438,7 @@ async fn cannot_call_google_callback_jwt_twice_with_same_csrf_token() -> Result<
             .await;
         assert_eq!(res.status_code(), 400);
     })
-        .await;
+    .await;
     Ok(())
 }
 #[tokio::test]
@@ -459,7 +459,7 @@ pub async fn cannot_call_google_callback_jwt_without_csrf_token(
             .await;
         assert_eq!(res.status_code(), 400);
     })
-        .await;
+    .await;
     Ok(())
 }
 #[tokio::test]
