@@ -191,6 +191,8 @@ mod tests {
                         timeout_request: None,
                         cors: None,
                         static_assets: None,
+                        secure_headers: None,
+                        remote_ip: None,
                     },
                 },
                 database: Database {

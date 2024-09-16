@@ -1,11 +1,11 @@
 [package]
 name = "loco-oauth2"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "A simple oauth2 library for loco"
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/yinho999/loco-oauth2"
+repository = "https://github.com/marcson909/loco-oauth2"
 homepage = "https://loco.rs/"
 keywords = ["loco", "oauth2"]
 categories = ["web-programming"]
@@ -27,7 +27,7 @@ axum-extra = { version = "0.9", features = ["cookie", "cookie-private"] }
 axum_session = { version = "0.14" }
 cookie = { version = "0.18", features = ["private"] }
 http = "1.1"
-loco-rs = { version = "0.6.0" }
+loco-rs = { version = "0.8.1" }
 oauth2 = "4.4"
 reqwest = { version = "0.11", features = ["serde_json", "json"] }
 sea-orm = { version = "1.0.0-rc.4", features = [
@@ -47,7 +47,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 
 [dependencies.sea-orm-migration]
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.4"
 features = [
     # Enable at least one `ASYNC_RUNTIME` and `DATABASE_DRIVER` feature if you want to run migration via CLI.
     # View the list of supported features at https://www.sea-ql.org/SeaORM/docs/install-and-config/database-and-async-runtime.
