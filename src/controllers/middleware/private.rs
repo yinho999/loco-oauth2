@@ -176,6 +176,7 @@ mod tests {
             queue: None,
             config: Config {
                 initializers: None,
+                scheduler: None,
                 logger: Logger::default(),
                 server: Server {
                     binding: "test-binding".to_string(),
@@ -191,6 +192,9 @@ mod tests {
                         timeout_request: None,
                         cors: None,
                         static_assets: None,
+                        fallback: None,
+                        remote_ip: None,
+                        secure_headers: None,
                     },
                 },
                 database: Database {
