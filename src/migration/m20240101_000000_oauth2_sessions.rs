@@ -1,6 +1,6 @@
 use sea_orm_migration::{
     prelude::*,
-    schema::{integer, pk_auto, string, table_auto, timestamp},
+    schema::{pk_auto, string, table_auto, timestamp, uuid},
 };
 
 #[derive(DeriveMigrationName)]
@@ -15,7 +15,7 @@ impl MigrationTrait for Migration {
                     .col(pk_auto(OAuth2Sessions::Id))
                     .col(string(OAuth2Sessions::SessionId))
                     .col(timestamp(OAuth2Sessions::ExpiresAt))
-                    .col(integer(OAuth2Sessions::UserId))
+                    .col(uuid(OAuth2Sessions::UserId))
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-sessions-users")
