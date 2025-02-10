@@ -210,6 +210,7 @@ mod tests {
                 mailer: None,
                 settings: None,
                 queue: None,
+                scheduler: None,
             },
             mailer: None,
             storage: Storage::single(storage::drivers::null::new()).into(),
