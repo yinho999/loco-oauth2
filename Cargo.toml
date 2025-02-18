@@ -29,7 +29,7 @@ cookie = { version = "0.18", features = ["private"] }
 http = "1.1"
 loco-rs = { version = "0.14" }
 oauth2 = "5.0"
-reqwest = { version = "0.12", features = ["json"]}
+reqwest = { version = "0.12", features = ["json"] }
 sea-orm = { version = "1.0.0-rc.4", features = [
     "sqlx-sqlite",
     "sqlx-postgres",

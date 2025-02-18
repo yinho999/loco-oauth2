@@ -1,12 +1,21 @@
 use std::{collections::HashMap, time::Instant};
 
-use oauth2::{basic::{BasicClient, BasicTokenResponse}, url, url::Url, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointMaybeSet, EndpointNotSet, EndpointSet, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, StandardRevocableToken, TokenResponse, TokenUrl};
-use oauth2::basic::{BasicErrorResponse, BasicRevocationErrorResponse, BasicTokenIntrospectionResponse};
+use crate::error::{OAuth2ClientError, OAuth2ClientResult};
+use async_trait::async_trait;
+use oauth2::basic::{
+    BasicErrorResponse, BasicRevocationErrorResponse, BasicTokenIntrospectionResponse,
+};
+use oauth2::{
+    basic::{BasicClient, BasicTokenResponse},
+    url,
+    url::Url,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointMaybeSet,
+    EndpointNotSet, EndpointSet, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
+    StandardRevocableToken, TokenResponse, TokenUrl,
+};
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 use subtle::ConstantTimeEq;
-
-use crate::error::{OAuth2ClientError, OAuth2ClientResult};
 
 /// A credentials struct that holds the `OAuth2` client credentials. - For
 /// [`Client`]
@@ -38,7 +47,18 @@ pub struct CookieConfig {
 /// Grant flow.
 pub struct Client {
     /// [`BasicClient`] instance for the `OAuth2` client.
-    pub oauth2: oauth2::Client<BasicErrorResponse, BasicTokenResponse,BasicTokenIntrospectionResponse,StandardRevocableToken,BasicRevocationErrorResponse, EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointMaybeSet>,
+    pub oauth2: oauth2::Client<
+        BasicErrorResponse,
+        BasicTokenResponse,
+        BasicTokenIntrospectionResponse,
+        StandardRevocableToken,
+        BasicRevocationErrorResponse,
+        EndpointSet,
+        EndpointNotSet,
+        EndpointNotSet,
+        EndpointNotSet,
+        EndpointMaybeSet,
+    >,
     /// [`Url`] instance for the `OAuth2` client's profile URL.
     pub profile_url: url::Url,
     /// [`reqwest::Client`] instance for the `OAuth2` client's HTTP client.
@@ -145,7 +165,7 @@ impl Client {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 pub trait GrantTrait: Send + Sync {
     /// Get authorization code client
     /// # Returns
@@ -334,8 +354,8 @@ pub trait GrantTrait: Send + Sync {
         // Exchange the code with a token
         let token = client
             .oauth2
-            .exchange_code(AuthorizationCode::new(code))
-            ?.set_pkce_verifier(pkce_verifier)
+            .exchange_code(AuthorizationCode::new(code))?
+            .set_pkce_verifier(pkce_verifier)
             .request_async(&oauth2::reqwest::Client::new())
             .await?;
         let profile = client

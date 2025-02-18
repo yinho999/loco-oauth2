@@ -1,6 +1,5 @@
 use crate::grants::authorization_code::CookieConfig;
 use crate::{base_oauth2::url, OAuth2ClientStore, COOKIE_NAME};
-use async_trait::async_trait;
 use axum::response::{IntoResponse, IntoResponseParts, ResponseParts};
 use axum::{
     extract::{FromRef, FromRequestParts},
@@ -72,7 +71,6 @@ impl OAuth2PrivateCookieJar {
         self.0.decrypt(cookie)
     }
 }
-#[async_trait]
 pub trait OAuth2PrivateCookieJarTrait: Clone {
     /// Create a short live cookie with the token response
     ///
@@ -127,7 +125,6 @@ impl OAuth2PrivateCookieJarTrait for OAuth2PrivateCookieJar {
     }
 }
 
-#[async_trait]
 impl<S> FromRequestParts<S> for OAuth2PrivateCookieJar
 where
     S: Send + Sync,
