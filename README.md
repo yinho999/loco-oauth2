@@ -43,8 +43,11 @@ cargo add loco-oauth2
 Or Cargo.toml
 
 ```toml
+[workspace.dependencies]
+loco-oauth2 = { version = "0.3" }
+
 [dependencies]
-loco-oauth2 = "0.2.0"
+loco-oauth2 = { workspace = true }
 ```
 
 <a name="glossary"></a>
@@ -114,13 +117,13 @@ initializers:
         url_config:
           auth_url: {{get_env(name="AUTH_URL", default="https://accounts.google.com/o/oauth2/auth")}} # authorization endpoint from the provider
           token_url: {{get_env(name="TOKEN_URL", default="https://www.googleapis.com/oauth2/v3/token")}} # token endpoint from the provider for exchanging the authorization code for an access token
-          redirect_url: {{get_env(name="REDIRECT_URL", default="http://localhost:3000/api/oauth2/google/callback/cookie")}} # server callback endpoint for the provider, for default jwt route use 'default="http://localhost:3000/api/oauth2/google/callback/cookie"'
+          redirect_url: {{get_env(name="REDIRECT_URL", default="http://localhost:5150/api/oauth2/google/callback/cookie")}} # server callback endpoint for the provider, for default jwt route use 'default="http://localhost:5150/api/oauth2/google/callback/cookie"'
           profile_url: {{get_env(name="PROFILE_URL", default="https://openidconnect.googleapis.com/v1/userinfo")}} # user profile endpoint from the provider for getting user data
           scopes:
             - {{get_env(name="SCOPES_1", default="https://www.googleapis.com/auth/userinfo.email")}} # Scopes for requesting access to user data
             - {{get_env(name="SCOPES_2", default="https://www.googleapis.com/auth/userinfo.profile")}} # Scopes for requesting access to user data
         cookie_config:
-          protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:3000/api/oauth2/protected")}} # Optional for jwt - For redirecting to protect url in cookie to prevent XSS attack
+          protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:5150/api/oauth2/protected")}} # Optional for jwt - For redirecting to protect url in cookie to prevent XSS attack
         timeout_seconds: 600 # Optional, default 600 seconds
 ```
 
@@ -135,7 +138,7 @@ purpose. We will create a new initializer struct for `AxumSessionStore` and impl
 ```toml
 # Cargo.toml
 # axum sessions
-axum_session = { version = "0.14.0" }
+axum_session = { version = "0.16.0" }
 ```
 ```rust 
 // src/initializers/axum_session.rs
@@ -173,7 +176,7 @@ add it to the `AxumRouter` as an extension.
 
 ```rust
 // src/initializers/oauth2.rs
-use axum::{async_trait, Extension, Router as AxumRouter};
+use axum::{Extension, Router as AxumRouter};
 use loco_oauth2::{config::Config, OAuth2ClientStore};
 use loco_rs::prelude::*;
 
@@ -235,11 +238,12 @@ impl Hooks for App {
 
 ### Installation
 
-We need to install `loco-oauth2` library within the migration folder.
+We need to install workspace `loco-oauth2` library within the migration folder.
 
-```bash
-# Within migration folder
-cargo add loco-oauth2
+```toml
+# migration/Cargo.toml
+[dependencies]
+loco-oauth2 = { workspace = true }
 ```
 
 ### Migration Script
@@ -401,7 +405,7 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
                 users::ActiveModel {
                     email: ActiveValue::set(profile.email.to_string()),
                     name: ActiveValue::set(profile.name.to_string()),
-                    email_verified_at: ActiveValue::set(Some(Local::now().naive_local())),
+                    email_verified_at: ActiveValue::set(Some(Local::now().into())),
                     password: ActiveValue::set(password_hash),
                     ..Default::default()
                 }
@@ -433,7 +437,6 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
         self.generate_jwt(secret, expiration)
     }
 }
-
 
 ```
 
@@ -469,7 +472,7 @@ impl OAuth2SessionsTrait<users::Model> for Model {
             .one(db)
             .await?
             .ok_or_else(|| ModelError::EntityNotFound)?;
-        Ok(oauth2_session.expires_at < Local::now().naive_local())
+        Ok(oauth2_session.expires_at < Utc::now())
     }
 
     /// Upsert a session with OAuth
@@ -499,8 +502,8 @@ impl OAuth2SessionsTrait<users::Model> for Model {
                 let mut oauth2_session: o_auth2_sessions::ActiveModel = oauth2_session.into();
                 oauth2_session.session_id = ActiveValue::set(oauth2_session_id);
                 oauth2_session.expires_at =
-                    ActiveValue::set(Local::now().naive_local() + token.expires_in().unwrap());
-                oauth2_session.updated_at = ActiveValue::set(Local::now().naive_local());
+                    ActiveValue::set(Utc::now() + token.expires_in().unwrap());
+                oauth2_session.updated_at = ActiveValue::set(Utc::now());
                 oauth2_session.update(&txn).await?
             }
             None => {
@@ -508,7 +511,7 @@ impl OAuth2SessionsTrait<users::Model> for Model {
                 o_auth2_sessions::ActiveModel {
                     session_id: ActiveValue::set(oauth2_session_id),
                     expires_at: ActiveValue::set(
-                        Local::now().naive_local() + token.expires_in().unwrap(),
+                        Utc::now() + token.expires_in().unwrap(),
                     ),
                     user_id: ActiveValue::set(user.id),
                     ..Default::default()

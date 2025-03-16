@@ -1,6 +1,5 @@
 use crate::grants::authorization_code::CookieConfig;
 use crate::{base_oauth2::url, OAuth2ClientStore, COOKIE_NAME};
-use async_trait::async_trait;
 use axum::response::{IntoResponse, IntoResponseParts, ResponseParts};
 use axum::{
     extract::{FromRef, FromRequestParts},
@@ -72,7 +71,6 @@ impl OAuth2PrivateCookieJar {
         self.0.decrypt(cookie)
     }
 }
-#[async_trait]
 pub trait OAuth2PrivateCookieJarTrait: Clone {
     /// Create a short live cookie with the token response
     ///
@@ -88,7 +86,7 @@ pub trait OAuth2PrivateCookieJarTrait: Clone {
         config: &CookieConfig,
         token: &BasicTokenResponse,
         jar: Self,
-    ) -> loco_rs::prelude::Result<Self>;
+    ) -> Result<Self, Box<loco_rs::errors::Error>>;
 }
 
 impl OAuth2PrivateCookieJarTrait for OAuth2PrivateCookieJar {
@@ -96,7 +94,7 @@ impl OAuth2PrivateCookieJarTrait for OAuth2PrivateCookieJar {
         config: &CookieConfig,
         token: &BasicTokenResponse,
         jar: Self,
-    ) -> loco_rs::prelude::Result<Self> {
+    ) -> Result<Self, Box<loco_rs::errors::Error>> {
         // Set the cookie
         let secs: i64 = token
             .expires_in()
@@ -108,7 +106,7 @@ impl OAuth2PrivateCookieJarTrait for OAuth2PrivateCookieJar {
         let protected_url = config
             .protected_url
             .clone()
-            .unwrap_or_else(|| "http://localhost:3000/oauth2/protected".to_string());
+            .unwrap_or_else(|| "http://localhost:5150/oauth2/protected".to_string());
         let protected_url = url::Url::parse(&protected_url)
             .map_err(|_e| loco_rs::errors::Error::InternalServerError)?;
         let protected_domain = protected_url.domain().unwrap_or("localhost");
@@ -127,7 +125,6 @@ impl OAuth2PrivateCookieJarTrait for OAuth2PrivateCookieJar {
     }
 }
 
-#[async_trait]
 impl<S> FromRequestParts<S> for OAuth2PrivateCookieJar
 where
     S: Send + Sync,
@@ -156,7 +153,8 @@ mod tests {
     use axum_extra::extract::PrivateCookieJar;
     use axum_test::TestServer;
     use http::header::{HeaderValue, COOKIE};
-    use loco_rs::config::{Config, Database, Logger, Middlewares, Server, Workers};
+    use loco_rs::config::{Config, Database, Logger, Server, Workers};
+    use loco_rs::controller::middleware::{self, request_id::RequestId};
     use loco_rs::environment::Environment;
     use loco_rs::storage::Storage;
     use loco_rs::{cache, storage};
@@ -173,7 +171,7 @@ mod tests {
         AppContext {
             environment: Environment::Production,
             db: DatabaseConnection::default(),
-            queue: None,
+            queue_provider: None,
             config: Config {
                 initializers: None,
                 logger: Logger::default(),
@@ -182,7 +180,7 @@ mod tests {
                     port: 8080,
                     host: "test-host".to_string(),
                     ident: None,
-                    middlewares: Middlewares {
+                    middlewares: middleware::Config {
                         compression: None,
                         etag: None,
                         limit_payload: None,
@@ -191,6 +189,10 @@ mod tests {
                         timeout_request: None,
                         cors: None,
                         static_assets: None,
+                        secure_headers: None,
+                        remote_ip: None,
+                        fallback: None,
+                        request_id: Some(RequestId { enable: true }),
                     },
                 },
                 database: Database {
@@ -210,6 +212,7 @@ mod tests {
                 mailer: None,
                 settings: None,
                 queue: None,
+                scheduler: None,
             },
             mailer: None,
             storage: Storage::single(storage::drivers::null::new()).into(),
