@@ -86,7 +86,7 @@ pub trait OAuth2PrivateCookieJarTrait: Clone {
         config: &CookieConfig,
         token: &BasicTokenResponse,
         jar: Self,
-    ) -> loco_rs::prelude::Result<Self>;
+    ) -> Result<Self, Box<loco_rs::errors::Error>>;
 }
 
 impl OAuth2PrivateCookieJarTrait for OAuth2PrivateCookieJar {
@@ -94,7 +94,7 @@ impl OAuth2PrivateCookieJarTrait for OAuth2PrivateCookieJar {
         config: &CookieConfig,
         token: &BasicTokenResponse,
         jar: Self,
-    ) -> loco_rs::prelude::Result<Self> {
+    ) -> Result<Self, Box<loco_rs::errors::Error>> {
         // Set the cookie
         let secs: i64 = token
             .expires_in()
@@ -106,7 +106,7 @@ impl OAuth2PrivateCookieJarTrait for OAuth2PrivateCookieJar {
         let protected_url = config
             .protected_url
             .clone()
-            .unwrap_or_else(|| "http://localhost:3000/oauth2/protected".to_string());
+            .unwrap_or_else(|| "http://localhost:5150/oauth2/protected".to_string());
         let protected_url = url::Url::parse(&protected_url)
             .map_err(|_e| loco_rs::errors::Error::InternalServerError)?;
         let protected_domain = protected_url.domain().unwrap_or("localhost");

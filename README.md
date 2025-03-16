@@ -114,13 +114,13 @@ initializers:
         url_config:
           auth_url: {{get_env(name="AUTH_URL", default="https://accounts.google.com/o/oauth2/auth")}} # authorization endpoint from the provider
           token_url: {{get_env(name="TOKEN_URL", default="https://www.googleapis.com/oauth2/v3/token")}} # token endpoint from the provider for exchanging the authorization code for an access token
-          redirect_url: {{get_env(name="REDIRECT_URL", default="http://localhost:3000/api/oauth2/google/callback/cookie")}} # server callback endpoint for the provider, for default jwt route use 'default="http://localhost:3000/api/oauth2/google/callback/cookie"'
+          redirect_url: {{get_env(name="REDIRECT_URL", default="http://localhost:5150/api/oauth2/google/callback/cookie")}} # server callback endpoint for the provider, for default jwt route use 'default="http://localhost:5150/api/oauth2/google/callback/cookie"'
           profile_url: {{get_env(name="PROFILE_URL", default="https://openidconnect.googleapis.com/v1/userinfo")}} # user profile endpoint from the provider for getting user data
           scopes:
             - {{get_env(name="SCOPES_1", default="https://www.googleapis.com/auth/userinfo.email")}} # Scopes for requesting access to user data
             - {{get_env(name="SCOPES_2", default="https://www.googleapis.com/auth/userinfo.profile")}} # Scopes for requesting access to user data
         cookie_config:
-          protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:3000/api/oauth2/protected")}} # Optional for jwt - For redirecting to protect url in cookie to prevent XSS attack
+          protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:5150/api/oauth2/protected")}} # Optional for jwt - For redirecting to protect url in cookie to prevent XSS attack
         timeout_seconds: 600 # Optional, default 600 seconds
 ```
 
