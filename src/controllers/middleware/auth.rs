@@ -77,7 +77,7 @@ where
     }
 }
 
-/// Implement the FromRequestParts trait for the OAuthCookieUser struct to construct a user from a request using middleware
+/// Implement the `FromRequestParts` trait for the `OAuthCookieUser` struct to construct a user from a request using middleware
 impl<S, T, U, V> FromRequestParts<S> for OAuth2CookieUser<T, U, V>
 where
     S: Send + Sync,
