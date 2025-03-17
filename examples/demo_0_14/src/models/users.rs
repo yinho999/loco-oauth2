@@ -1,11 +1,11 @@
+pub use super::_entities::users::{self, ActiveModel, Entity, Model};
+use super::o_auth2_sessions;
 use async_trait::async_trait;
 use chrono::{offset::Local, Duration};
+use loco_oauth2::models::users::OAuth2UserTrait;
 use loco_rs::{auth::jwt, hash, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use loco_oauth2::models::users::OAuth2UserTrait;
-use super::o_auth2_sessions;
-pub use super::_entities::users::{self, ActiveModel, Entity, Model};
 
 pub const MAGIC_LINK_LENGTH: i8 = 32;
 pub const MAGIC_LINK_EXPIRATION_MIN: i8 = 5;
@@ -23,10 +23,9 @@ pub struct OAuth2UserProfile {
     pub email_verified: bool,
     pub given_name: Option<String>, // Some accounts don't have this field
     pub family_name: Option<String>, // Some accounts don't have this field
-    pub picture: Option<String>, // Some accounts don't have this field
-    pub locale: Option<String>, // Some accounts don't have this field
+    pub picture: Option<String>,    // Some accounts don't have this field
+    pub locale: Option<String>,     // Some accounts don't have this field
 }
-
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LoginParams {
@@ -384,7 +383,6 @@ impl ActiveModel {
     }
 }
 
-
 #[async_trait]
 impl OAuth2UserTrait<OAuth2UserProfile> for Model {
     /// Asynchronously finds user by OAuth2 session id.
@@ -448,12 +446,12 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
                     password: ActiveValue::set(password_hash),
                     ..Default::default()
                 }
-                    .insert(&txn)
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Error while trying to create user: {e}");
-                        ModelError::Any(e.into())
-                    })?
+                .insert(&txn)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Error while trying to create user: {e}");
+                    ModelError::Any(e.into())
+                })?
             }
             // Do nothing if user exists
             Some(user) => user,

@@ -41,8 +41,8 @@ pub async fn get_authorization_url<T: DatabasePool + Clone + Debug + Sync + Send
 
 /// Helper function to exchange the code for a token and then get the user profile
 /// then upsert the user and the session and set the token in a short live
-/// cookie 
-/// 
+/// cookie
+///
 /// Lastly, it will redirect the user to the protected URL
 /// # Generics
 /// * `T` - The user profile, should implement `DeserializeOwned` and `Send`
@@ -116,8 +116,8 @@ pub async fn callback<
 
 /// Helper function to exchange the code for a token and then get the user profile
 /// then upsert the user and the session and set the token in a short live
-/// cookie 
-/// 
+/// cookie
+///
 /// Lastly, it will redirect the user to the protected URL
 /// # Generics
 /// * `T` - The user profile, should implement `DeserializeOwned` and `Send`
@@ -175,7 +175,7 @@ pub async fn callback_jwt<
 }
 
 /// The authorization URL for the `OAuth2` flow
-/// 
+///
 /// This will redirect the user to the `OAuth2` provider's login page
 /// and then to the callback URL
 /// # Generics
@@ -204,11 +204,11 @@ pub async fn google_authorization_url<T: DatabasePool + Clone + Debug + Sync + S
 }
 
 /// The callback URL for the `OAuth2` flow
-/// 
+///
 /// This will exchange the code for a token and then get the user profile
 /// then upsert the user and the session and set the token in a short live
-/// cookie 
-/// 
+/// cookie
+///
 /// Lastly, it will redirect the user to the protected URL
 /// # Generics
 /// * `T` - The user profile, should implement `DeserializeOwned` and `Send`
@@ -252,11 +252,11 @@ pub async fn google_callback_cookie<
 }
 
 /// The callback URL for the `OAuth2` flow
-/// 
+///
 /// This will exchange the code for a token and then get the user profile
 /// then upsert the user and the session and set the token in a short live
-/// cookie. 
-/// 
+/// cookie.
+///
 /// Lastly, it will redirect the user to the protected URL
 /// # Generics
 /// * `T` - The user profile, should implement `DeserializeOwned` and `Send`

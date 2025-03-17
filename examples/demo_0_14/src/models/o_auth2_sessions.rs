@@ -1,7 +1,7 @@
 pub use super::_entities::o_auth2_sessions::{ActiveModel, Column, Entity, Model};
 use crate::models::{o_auth2_sessions, users};
 use async_trait::async_trait;
-use chrono::{Utc};
+use chrono::Utc;
 use loco_oauth2::models::oauth2_sessions::OAuth2SessionsTrait;
 use loco_oauth2::{base_oauth2::basic::BasicTokenResponse, base_oauth2::TokenResponse};
 use loco_rs::prelude::ModelError;
@@ -89,9 +89,7 @@ impl OAuth2SessionsTrait<users::Model> for Model {
                 // Create the session
                 o_auth2_sessions::ActiveModel {
                     session_id: ActiveValue::set(oauth2_session_id),
-                    expires_at: ActiveValue::set(
-                        Utc::now() + token.expires_in().unwrap(),
-                    ),
+                    expires_at: ActiveValue::set(Utc::now() + token.expires_in().unwrap()),
                     user_id: ActiveValue::set(user.id),
                     ..Default::default()
                 }
