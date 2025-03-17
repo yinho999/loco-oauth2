@@ -1,7 +1,9 @@
 use std::env;
 
 use crate::requests::prepare_data;
+use demo_0_14::views::auth::CurrentResponse;
 use demo_0_14::{app::App, models::users::OAuth2UserProfile, views::auth::LoginResponse};
+use loco_rs::testing::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serial_test::serial;
@@ -10,8 +12,6 @@ use wiremock::{
     matchers::{basic_auth, bearer_token, body_string_contains, method, path},
     Mock, MockServer, ResponseTemplate,
 };
-use loco_rs::testing::prelude::*;
-use demo_0_14::views::auth::CurrentResponse;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 struct ExchangeMockBody {

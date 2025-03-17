@@ -1,7 +1,7 @@
 use axum::debug_handler;
 use loco_rs::prelude::*;
 
-use crate::{models::_entities::users, };
+use crate::models::_entities::users;
 use crate::views::auth::CurrentResponse;
 
 #[debug_handler]
