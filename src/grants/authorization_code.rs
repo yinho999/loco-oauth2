@@ -1,28 +1,25 @@
 use std::{collections::HashMap, time::Instant};
 
-use crate::error::{OAuth2ClientError, OAuth2ClientResult};
-use async_trait::async_trait;
-use oauth2::basic::{
-    BasicErrorResponse, BasicRevocationErrorResponse, BasicTokenIntrospectionResponse,
-};
 use oauth2::{
     basic::{BasicClient, BasicTokenResponse},
+    reqwest::async_http_client,
     url,
     url::Url,
-    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointMaybeSet,
-    EndpointNotSet, EndpointSet, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
-    StandardRevocableToken, TokenResponse, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge,
+    PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 use subtle::ConstantTimeEq;
+
+use crate::error::{OAuth2ClientError, OAuth2ClientResult};
 
 /// A credentials struct that holds the `OAuth2` client credentials. - For
 /// [`Client`]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Credentials {
     pub client_id: String,
-    pub client_secret: String,
+    pub client_secret: Option<String>,
 }
 
 /// A url config struct that holds the `OAuth2` client related URLs. - For
@@ -47,18 +44,7 @@ pub struct CookieConfig {
 /// Grant flow.
 pub struct Client {
     /// [`BasicClient`] instance for the `OAuth2` client.
-    pub oauth2: oauth2::Client<
-        BasicErrorResponse,
-        BasicTokenResponse,
-        BasicTokenIntrospectionResponse,
-        StandardRevocableToken,
-        BasicRevocationErrorResponse,
-        EndpointSet,
-        EndpointNotSet,
-        EndpointNotSet,
-        EndpointNotSet,
-        EndpointMaybeSet,
-    >,
+    pub oauth2: BasicClient,
     /// [`Url`] instance for the `OAuth2` client's profile URL.
     pub profile_url: url::Url,
     /// [`reqwest::Client`] instance for the `OAuth2` client's HTTP client.
@@ -113,14 +99,11 @@ impl Client {
         timeout_seconds: Option<u64>,
     ) -> OAuth2ClientResult<Self> {
         let client_id = ClientId::new(credentials.client_id);
-        let client_secret = ClientSecret::new(credentials.client_secret);
+        let client_secret = credentials.client_secret.map(ClientSecret::new);
         let auth_url = AuthUrl::new(config.auth_url)?;
         let token_url = Some(TokenUrl::new(config.token_url)?);
         let redirect_url = RedirectUrl::new(config.redirect_url)?;
-        let oauth2 = BasicClient::new(client_id)
-            .set_client_secret(client_secret)
-            .set_auth_uri(auth_url)
-            .set_token_uri_option(token_url)
+        let oauth2 = BasicClient::new(client_id, client_secret, auth_url, token_url)
             .set_redirect_uri(redirect_url);
         let profile_url = url::Url::parse(&config.profile_url)?;
         let scopes = config
@@ -165,7 +148,7 @@ impl Client {
     }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 pub trait GrantTrait: Send + Sync {
     /// Get authorization code client
     /// # Returns
@@ -354,9 +337,9 @@ pub trait GrantTrait: Send + Sync {
         // Exchange the code with a token
         let token = client
             .oauth2
-            .exchange_code(AuthorizationCode::new(code))?
+            .exchange_code(AuthorizationCode::new(code))
             .set_pkce_verifier(pkce_verifier)
-            .request_async(&oauth2::reqwest::Client::new())
+            .request_async(async_http_client)
             .await?;
         let profile = client
             .http_client
@@ -463,7 +446,7 @@ mod tests {
         let settings = Settings::new().await;
         let credentials = Credentials {
             client_id: settings.client_id.to_string(),
-            client_secret: settings.client_secret.to_string(),
+            client_secret: Some(settings.client_secret.to_string()),
         };
         let url_config = UrlConfig {
             auth_url: settings.auth_url.to_string(),

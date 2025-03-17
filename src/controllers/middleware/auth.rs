@@ -2,6 +2,7 @@ use crate::controllers::middleware::OAuth2PrivateCookieJar;
 use crate::models::oauth2_sessions::OAuth2SessionsTrait;
 use crate::models::users::OAuth2UserTrait;
 use crate::{OAuth2ClientStore, COOKIE_NAME};
+use async_trait::async_trait;
 use axum::{
     extract::{FromRef, FromRequestParts},
     http::{request::Parts, StatusCode},
@@ -77,7 +78,8 @@ where
     }
 }
 
-/// Implement the `FromRequestParts` trait for the `OAuthCookieUser` struct to construct a user from a request using middleware
+/// Implement the FromRequestParts trait for the OAuthCookieUser struct to construct a user from a request using middleware
+#[async_trait]
 impl<S, T, U, V> FromRequestParts<S> for OAuth2CookieUser<T, U, V>
 where
     S: Send + Sync,

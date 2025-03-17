@@ -1,9 +1,8 @@
 use crate::oauth2_grant::OAuth2ClientGrantEnum;
-use oauth2::basic::{BasicErrorResponseType};
-use oauth2::{url::ParseError, HttpClientError, RequestTokenError, StandardErrorResponse};
+use oauth2::{
+    basic::BasicErrorResponseType, url::ParseError, RequestTokenError, StandardErrorResponse,
+};
 use std::fmt::{Debug, Display};
-use reqwest::Error;
-
 #[allow(clippy::module_name_repetitions)]
 #[derive(thiserror::Error)]
 pub enum OAuth2StoreError {
@@ -67,12 +66,10 @@ pub enum OAuth2ClientError {
     CsrfTokenError,
     #[error("Profile error")]
     ProfileError(reqwest::Error),
-    #[error("Configuration error")]
-    ConfigError(#[from] oauth2::ConfigurationError),
 }
 
 type BasicTokenError = RequestTokenError<
-    HttpClientError<Error>,
+    oauth2::reqwest::Error<reqwest::Error>,
     StandardErrorResponse<BasicErrorResponseType>,
 >;
 

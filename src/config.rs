@@ -23,12 +23,12 @@ use std::str::FromStr;
 ///     url_config:
 ///      auth_url: https://accounts.google.com/o/oauth2/auth # authorization endpoint from the provider
 ///      token_url: https://www.googleapis.com/oauth2/v3/token # token endpoint from the provider for exchanging the authorization code for an access token
-///      redirect_url: http://localhost:5150/api/auth/google_callback # server callback endpoint for the provider
+///      redirect_url: http://localhost:3000/api/auth/google_callback # server callback endpoint for the provider
 ///      profile_url: https://openidconnect.googleapis.com/v1/userinfo # user profile endpoint from the provider for getting user data
 ///      scopes:
 ///       - https://www.googleapis.com/auth/userinfo.email # Scopes for requesting access to user data
 ///     cookie_config:
-///       protected_url: http://localhost:5150/api/auth/google_callback # Optional - For redirecting to protect url in cookie to prevent XSS attack
+///       protected_url: http://localhost:3000/api/auth/google_callback # Optional - For redirecting to protect url in cookie to prevent XSS attack
 ///     timeout_seconds: 600 # Optional, default 600 seconds
 /// ```
 #[derive(Debug, Clone, Deserialize, Serialize)]
