@@ -93,8 +93,8 @@ impl OAuth2SessionsTrait<users::Model> for Model {
                     user_id: ActiveValue::set(user.id),
                     ..Default::default()
                 }
-                    .insert(&txn)
-                    .await?
+                .insert(&txn)
+                .await?
             }
         };
         txn.commit().await?;

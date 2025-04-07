@@ -264,8 +264,8 @@ impl Model {
             name: ActiveValue::set(params.name.to_string()),
             ..Default::default()
         }
-            .insert(&txn)
-            .await?;
+        .insert(&txn)
+        .await?;
 
         txn.commit().await?;
 
@@ -447,12 +447,12 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
                     password: ActiveValue::set(password_hash),
                     ..Default::default()
                 }
-                    .insert(&txn)
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Error while trying to create user: {e}");
-                        ModelError::Any(e.into())
-                    })?
+                .insert(&txn)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Error while trying to create user: {e}");
+                    ModelError::Any(e.into())
+                })?
             }
             // Do nothing if user exists
             Some(user) => user,
