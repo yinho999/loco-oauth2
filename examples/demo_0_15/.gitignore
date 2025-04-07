@@ -18,3 +18,5 @@ target/
 
 *.sqlite
 *.sqlite-*
+
+.idea/

@@ -11,13 +11,15 @@ default-run = "demo_0_15-cli"
 
 [workspace.dependencies]
 loco-rs = { version = "0.15" }
+loco-oauth2 = { version = "*", path = "../../" }
 
 [dependencies]
-loco-rs = { workspace = true  }
+loco-rs = { workspace = true }
+loco-oauth2 = { workspace = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 tokio = { version = "1.33.0", default-features = false, features = [
-  "rt-multi-thread",
+    "rt-multi-thread",
 ] }
 async-trait = { version = "0.1.74" }
 axum = { version = "0.8.1" }
@@ -26,10 +28,10 @@ tracing-subscriber = { version = "0.3.17", features = ["env-filter", "json"] }
 regex = { version = "1.11.1" }
 migration = { path = "migration" }
 sea-orm = { version = "1.1.0", features = [
-  "sqlx-sqlite",
-  "sqlx-postgres",
-  "runtime-tokio-rustls",
-  "macros",
+    "sqlx-sqlite",
+    "sqlx-postgres",
+    "runtime-tokio-rustls",
+    "macros",
 ] }
 chrono = { version = "0.4" }
 validator = { version = "0.20" }
@@ -40,6 +42,8 @@ fluent-templates = { version = "0.8.0", features = ["tera"] }
 unic-langid = { version = "0.9.4" }
 # /view engine
 axum-extra = { version = "0.10", features = ["form"] }
+axum_session = "0.16.0"
+
 
 [[bin]]
 name = "demo_0_15-cli"
@@ -51,3 +55,8 @@ loco-rs = { workspace = true, features = ["testing"] }
 serial_test = { version = "3.1.1" }
 rstest = { version = "0.21.0" }
 insta = { version = "1.34.0", features = ["redactions", "yaml", "filters"] }
+regex = "1.10.4"
+url = "2.5.0"
+matchers = "0.1.0"
+serde_urlencoded = "0.7.1"
+wiremock = "0.6.0"
