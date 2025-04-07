@@ -1,0 +1,113 @@
+# Loco configuration file documentation
+
+# Application logging configuration
+logger:
+  # Enable or disable logging.
+  enable: true
+  # Enable pretty backtrace (sets RUST_BACKTRACE=1)
+  pretty_backtrace: true
+  # Log level, options: trace, debug, info, warn or error.
+  level: debug
+  # Define the logging format. options: compact, pretty or json
+  format: compact
+  # By default the logger has filtering only logs that came from your code or logs that came from `loco` framework. to see all third party libraries
+  # Uncomment the line below to override to see all third party libraries you can enable this config and override the logger filters.
+  # override_filter: trace
+
+# Web server configuration
+server:
+  # Port on which the server will listen. the server binding is 0.0.0.0:{PORT}
+  port: 5150
+  # Binding for the server (which interface to bind to)
+  binding: localhost
+  # The UI hostname or IP address that mailers will point to.
+  host: http://localhost
+  # Out of the box middleware configuration. to disable middleware you can changed the `enable` field to `false` of comment the middleware block
+  middlewares:
+    static:
+      enable: true
+      must_exist: true
+      precompressed: false
+      folder:
+        uri: "/static"
+        path: "assets/static"
+      fallback: "assets/static/404.html"
+
+# Worker Configuration
+workers:
+  # specifies the worker mode. Options:
+  #   - BackgroundQueue - Workers operate asynchronously in the background, processing queued.
+  #   - ForegroundBlocking - Workers operate in the foreground and block until tasks are completed.
+  #   - BackgroundAsync - Workers operate asynchronously in the background, processing tasks with async capabilities.
+  mode: BackgroundAsync
+
+  
+
+# Mailer Configuration.
+mailer:
+  # SMTP mailer configuration.
+  smtp:
+    # Enable/Disable smtp mailer.
+    enable: true
+    # SMTP server host. e.x localhost, smtp.gmail.com
+    host: localhost
+    # SMTP server port
+    port: 1025
+    # Use secure connection (SSL/TLS).
+    secure: false
+    # auth:
+    #   user:
+    #   password:
+    # Override the SMTP hello name (default is the machine's hostname)
+    # hello_name:
+
+# Initializers Configuration
+initializers:
+  oauth2:
+    secret_key: {{get_env(name="OAUTH_PRIVATE_KEY", default="144, 76, 183, 1, 15, 184, 233, 174, 214, 251, 190, 186, 122, 61, 74, 84, 225, 110, 189, 115, 10, 251, 133, 128, 52, 46, 15, 66, 85, 1, 245, 73, 27, 113, 189, 15, 209, 205, 61, 100, 73, 31, 18, 58, 235, 105, 141, 36, 70, 92, 231, 151, 27, 32, 243, 117, 30, 244, 110, 89, 233, 196, 137, 130")}} # Optional, key for Private Cookie Jar, must be more than 64 bytes
+    authorization_code: # Authorization code grant type
+      - client_identifier: google # Identifier for the OAuth2 provider. Replace 'google' with your provider's name if different, must be unique within the oauth2 config.
+        client_credentials:
+          client_id: {{get_env(name="OAUTH_CLIENT_ID", default="oauth_client_id")}} # Replace with your OAuth2 client ID.
+          client_secret: {{get_env(name="OAUTH_CLIENT_SECRET", default="oauth_client_secret")}} # Replace with your OAuth2 client secret.
+        url_config:
+          auth_url: {{get_env(name="AUTH_URL", default="https://accounts.google.com/o/oauth2/auth")}} # authorization endpoint from the provider
+          token_url: {{get_env(name="TOKEN_URL", default="https://www.googleapis.com/oauth2/v3/token")}} # token endpoint from the provider for exchanging the authorization code for an access token
+          redirect_url: {{get_env(name="REDIRECT_URL", default="http://localhost:5150/api/oauth2/google/callback/cookie")}} # server callback endpoint for the provider, for default jwt route use 'default="http://localhost:5150/api/oauth2/google/callback/cookie"'
+          profile_url: {{get_env(name="PROFILE_URL", default="https://openidconnect.googleapis.com/v1/userinfo")}} # user profile endpoint from the provider for getting user data
+          scopes:
+            - {{get_env(name="SCOPES_1", default="https://www.googleapis.com/auth/userinfo.email")}} # Scopes for requesting access to user data
+            - {{get_env(name="SCOPES_2", default="https://www.googleapis.com/auth/userinfo.profile")}} # Scopes for requesting access to user data
+        cookie_config:
+          protected_url: {{get_env(name="PROTECTED_URL", default="http://localhost:5150/api/oauth2/protected")}} # Optional - For redirecting to protect url in cookie to prevent XSS attack
+        timeout_seconds: 600 # Optional, default 600 seconds
+
+# Database Configuration
+database:
+  # Database connection URI
+  uri: {{ get_env(name="DATABASE_URL", default="sqlite://demo_0_15_development.sqlite?mode=rwc") }}
+  # When enabled, the sql query will be logged.
+  enable_logging: false
+  # Set the timeout duration when acquiring a connection.
+  connect_timeout: {{ get_env(name="DB_CONNECT_TIMEOUT", default="500") }}
+  # Set the idle duration before closing a connection.
+  idle_timeout: {{ get_env(name="DB_IDLE_TIMEOUT", default="500") }}
+  # Minimum number of connections for a pool.
+  min_connections: {{ get_env(name="DB_MIN_CONNECTIONS", default="1") }}
+  # Maximum number of connections for a pool.
+  max_connections: {{ get_env(name="DB_MAX_CONNECTIONS", default="1") }}
+  # Run migration up when application loaded
+  auto_migrate: true
+  # Truncate database when application loaded. This is a dangerous operation, make sure that you using this flag only on dev environments or test mode
+  dangerously_truncate: false
+  # Recreating schema when application loaded.  This is a dangerous operation, make sure that you using this flag only on dev environments or test mode
+  dangerously_recreate: false
+
+# Authentication Configuration
+auth:
+  # JWT authentication
+  jwt:
+    # Secret key for token generation and verification
+    secret: N5otXuxoC24VURIpKEDo
+    # Token expiration time in seconds
+    expiration: 604800 # 7 days

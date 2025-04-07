@@ -1,11 +1,11 @@
-name: examples/demo_0_6
+name: examples/demo_0_15
 
 on:
   push:
     branches:
       - master
     paths:
-      - examples/demo_0_14/**
+      - examples/demo_0_15/**
   pull_request:
     branches:
       - master
@@ -32,7 +32,7 @@ jobs:
           override: true
           components: rustfmt
       - run: cargo fmt --all -- --check
-        working-directory: ./examples/demo_0_6
+        working-directory: ./examples/demo_0_15
 
   clippy:
     name: Run Clippy
@@ -54,7 +54,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Run cargo clippy
         run: cargo clippy -- -W clippy::nursery -W clippy::pedantic -W rust-2018-idioms -W rust-2021-compatibility
-        working-directory: ./examples/demo_0_6
+        working-directory: ./examples/demo_0_15
   
   test:
     name: Run Tests
@@ -62,29 +62,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    services:
-      redis:
-        image: redis
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - "6379:6379"
-      postgres:
-        image: postgres
-        env:
-          POSTGRES_DB: postgres_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - "5432:5432"
-        # Set health checks to wait until postgres has started
-        options: --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4
@@ -97,7 +74,4 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Run cargo test
         run: cargo test --all-features --all
-        working-directory: ./examples/demo_0_6
-        env:
-          REDIS_URL: redis://localhost:${{job.services.redis.ports[6379]}}
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres_test
+        working-directory: ./examples/demo_0_15

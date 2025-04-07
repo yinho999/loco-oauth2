@@ -27,7 +27,7 @@ axum-extra = { version = "0.10", features = ["cookie", "cookie-private"] }
 axum_session = { version = "0.16" }
 cookie = { version = "0.18", features = ["private"] }
 http = "1.1"
-loco-rs = { version = "0.14" }
+loco-rs = { version = "0.15" }
 oauth2 = "5.0"
 reqwest = { version = "0.12", features = ["json"] }
 sea-orm = { version = "1.0.0-rc.4", features = [
