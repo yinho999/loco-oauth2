@@ -10,7 +10,7 @@ Medium
 
 ## Affected Documentation Versions
 
-All documentation versions prior to 0.4.0
+All documentation versions prior to 0.4.1
 
 ## Vulnerability Details
 
@@ -135,7 +135,7 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
 ## Timeline
 
 -   **2025-04-13**: Documentation security issue identified during review
--   **2025-04-13**: Documentation updated in version 0.4.0
+-   **2025-04-13**: Documentation updated in version 0.4.1
 -   **2025-04-13**: Security advisory published
 
 ## Acknowledgements
