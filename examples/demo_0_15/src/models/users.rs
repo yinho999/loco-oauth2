@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use chrono::{offset::Local, Duration};
 use loco_oauth2::models::users::OAuth2UserTrait;
 use loco_rs::{auth::jwt, hash, prelude::*};
+use passwords::PasswordGenerator;
 use serde::{Deserialize, Serialize};
 use serde_json::Map;
 use uuid::Uuid;
@@ -436,9 +437,19 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
             .await?
         {
             None => {
+                let pg = PasswordGenerator::new()
+                    .length(8)
+                    .numbers(true)
+                    .lowercase_letters(true)
+                    .uppercase_letters(true)
+                    .symbols(true)
+                    .spaces(true)
+                    .exclude_similar_characters(true)
+                    .strict(true);
+                let password = pg.generate_one().map_err(|e| ModelError::Any(e.into()))?;
                 // We use the sub field as the user fake password since sub is unique
                 let password_hash =
-                    hash::hash_password(&profile.sub).map_err(|e| ModelError::Any(e.into()))?;
+                    hash::hash_password(&password).map_err(|e| ModelError::Any(e.into()))?;
                 // Create the user into the database
                 users::ActiveModel {
                     email: ActiveValue::set(profile.email.to_string()),

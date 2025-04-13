@@ -1,3 +1,8 @@
+> **⚠️ SECURITY UPDATE ⚠️**  
+> A critical security vulnerability has been discovered in documentation versions prior to 0.4.1
+> Please update to the latest version immediately.  
+> [Read the security advisory](SECURITY-ADVISORY.md)
+
 # Loco OAuth2
 
 Loco OAuth2 is a simple OAuth2 initializer for the Loco API. It is designed to be a tiny and easy-to-use library for
@@ -44,7 +49,7 @@ Or Cargo.toml
 
 ```toml
 [workspace.dependencies]
-loco-oauth2 = { version = "0.3" }
+loco-oauth2 = { version = "0.4" }
 
 [dependencies]
 loco-oauth2 = { workspace = true }
@@ -55,7 +60,7 @@ loco-oauth2 = { workspace = true }
 ## Glossary
 
 |                              |                                                                                                          |
-|------------------------------|----------------------------------------------------------------------------------------------------------|
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `OAuth2ClientGrantEnum`      | Enum for the different OAuth2 grants, an OAuth2 Client will belong to one of the `OAuth2ClientGrantEnum` |
 | `OAuth2ClientStore`          | Abstraction implementation for managing one or more OAuth2 clients.                                      |
 | `authorization_code::Client` | A client that uses the Authorization Code Grant.                                                         |
@@ -64,16 +69,18 @@ loco-oauth2 = { workspace = true }
 
 ## Configuration (Authorization Code Grant)
 
-### Generate a private cookie secret key 
+### Generate a private cookie secret key
 
 secret_key is used to encrypt the private cookie jar. It must be more than 64 bytes. If not provided, it will be
 auto-generated.
 Here is an example of how to generate a private cookie secret key.
+
 ```toml
 # Cargo.toml
 rand = "0.9.0-alpha.1"
 axum-extra = { version = "0.9.3", features = ["cookie-private"]}
 ```
+
 ```rust
 // src/main.rs
 use axum_extra::extract::cookie::Key;
@@ -100,7 +107,7 @@ fn main() {
 OAuth2 Configuration is done in the `config/*.yaml` file. The `oauth2` section is used to configure the OAuth2 clients.
 
 This example is using Google Cloud as the OAuth2 provider. You need a Google Cloud project and create OAuth2 credentials
-for `client_id` and `client_secret` using OAuth client Id option.  `redirect_url` is the server callback endpoint for
+for `client_id` and `client_secret` using OAuth client Id option. `redirect_url` is the server callback endpoint for
 the provider which should set within `Authorised redirect URIs` section when creating OAuth2 client id.
 
 ```yaml
@@ -135,12 +142,14 @@ We are going to use the initializer functionality in Loco framework to initializ
 
 Firstly we need to create a session store for the storing the csrf token. We will use the `AxumSessionStore` for this
 purpose. We will create a new initializer struct for `AxumSessionStore` and implement the `Initializer` trait.
+
 ```toml
 # Cargo.toml
 # axum sessions
 axum_session = { version = "0.16.0" }
 ```
-```rust 
+
+```rust
 // src/initializers/axum_session.rs
 use async_trait::async_trait;
 use axum::Router as AxumRouter;
@@ -338,6 +347,14 @@ Next we need to implement 2 traits for the `users::Model` model and the `o_auth2
 
 ### `OAuth2UserTrait` Example
 
+We should generate a random password for the user and save it to the database.
+
+```toml
+# Cargo.toml
+[dependencies]
+passwords = "3"
+```
+
 ```rust
 // src/models/users.rs
 use loco_oauth2::models::users::OAuth2UserTrait;
@@ -345,6 +362,7 @@ use loco_rs::{auth::jwt, hash, prelude::*};
 use super::o_auth2_sessions;
 use async_trait::async_trait;
 use chrono::offset::Local;
+use passwords::PasswordGenerator;
 
 #[async_trait]
 impl OAuth2UserTrait<OAuth2UserProfile> for Model {
@@ -398,9 +416,19 @@ impl OAuth2UserTrait<OAuth2UserProfile> for Model {
             .await?
         {
             None => {
+                let pg = PasswordGenerator::new()
+                    .length(8)
+                    .numbers(true)
+                    .lowercase_letters(true)
+                    .uppercase_letters(true)
+                    .symbols(true)
+                    .spaces(true)
+                    .exclude_similar_characters(true)
+                    .strict(true);
+                let password = pg.generate_one().map_err(|e| ModelError::Any(e.into()))?;
                 // We use the sub field as the user fake password since sub is unique
                 let password_hash =
-                    hash::hash_password(&profile.sub).map_err(|e| ModelError::Any(e.into()))?;
+                    hash::hash_password(&password).map_err(|e| ModelError::Any(e.into()))?;
                 // Create the user into the database
                 users::ActiveModel {
                     email: ActiveValue::set(profile.email.to_string()),
@@ -624,6 +652,7 @@ pub async fn google_callback_cookie(
 ```
 
 ### `CallbackController JWT` Example - SPA applications
+
 ```rust
 /// The callback URL for the `OAuth2` flow
 /// This will exchange the code for a token and then get the user profile

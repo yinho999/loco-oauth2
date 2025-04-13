@@ -1,6 +1,6 @@
 [package]
 name = "loco-oauth2"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 description = "A simple oauth2 library for loco"
 license = "MIT"
