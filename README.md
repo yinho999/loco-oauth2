@@ -1,5 +1,5 @@
 > **⚠️ SECURITY UPDATE ⚠️**  
-> A critical security vulnerability has been discovered in documentation versions prior to 0.4.0
+> A critical security vulnerability has been discovered in documentation versions prior to 0.4.1
 > Please update to the latest version immediately.  
 > [Read the security advisory](SECURITY-ADVISORY.md)
 
