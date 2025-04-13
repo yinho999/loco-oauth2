@@ -1268,7 +1268,7 @@ dependencies = [
  "include_dir",
  "insta",
  "loco-oauth2",
- "loco-rs",
+ "loco-rs 0.14.1",
  "matchers",
  "migration",
  "regex",
@@ -1284,7 +1284,7 @@ dependencies = [
  "unic-langid",
  "url",
  "uuid",
- "validator",
+ "validator 0.19.0",
  "wiremock",
 ]
 
@@ -2738,8 +2738,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "loco-gen"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af6a65aa52f43363e67c8e300d997f55a79bf5b7b3ad02e794dfd0414d012ecd"
+dependencies = [
+ "chrono",
+ "clap",
+ "colored",
+ "cruet 0.14.0",
+ "duct",
+ "heck 0.4.1",
+ "include_dir",
+ "regex",
+ "rrgen",
+ "serde",
+ "serde_json",
+ "tera",
+ "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
 name = "loco-oauth2"
-version = "0.2.0"
+version = "0.4.0"
 dependencies = [
  "async-std",
  "async-trait",
@@ -2748,7 +2770,7 @@ dependencies = [
  "axum_session",
  "cookie",
  "http",
- "loco-rs",
+ "loco-rs 0.15.0",
  "oauth2",
  "reqwest",
  "sea-orm",
@@ -2794,7 +2816,7 @@ dependencies = [
  "ipnetwork",
  "jsonwebtoken",
  "lettre",
- "loco-gen",
+ "loco-gen 0.14.1",
  "mime",
  "moka",
  "opendal",
@@ -2825,7 +2847,68 @@ dependencies = [
  "tracing-subscriber",
  "ulid",
  "uuid",
- "validator",
+ "validator 0.19.0",
+]
+
+[[package]]
+name = "loco-rs"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1122ebb1e981888d26ecbf33e323bf9816b3748b57a3fd5e67b37cfe44750e3"
+dependencies = [
+ "argon2",
+ "async-trait",
+ "axum",
+ "axum-extra",
+ "backtrace_printer",
+ "bb8",
+ "byte-unit",
+ "bytes",
+ "cfg-if",
+ "chrono",
+ "clap",
+ "colored",
+ "cruet 0.13.3",
+ "duct",
+ "duct_sh",
+ "english-to-cron",
+ "futures-util",
+ "heck 0.4.1",
+ "hyper",
+ "include_dir",
+ "ipnetwork",
+ "jsonwebtoken",
+ "lettre",
+ "loco-gen 0.15.0",
+ "moka",
+ "opendal",
+ "rand 0.8.5",
+ "regex",
+ "reqwest",
+ "rusty-sidekiq",
+ "sea-orm",
+ "sea-orm-migration",
+ "semver",
+ "serde",
+ "serde_json",
+ "serde_variant",
+ "serde_yaml",
+ "sqlx",
+ "tera",
+ "thiserror 1.0.69",
+ "thousands",
+ "tokio",
+ "tokio-cron-scheduler",
+ "tokio-util",
+ "toml",
+ "tower 0.4.13",
+ "tower-http",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "ulid",
+ "uuid",
+ "validator 0.20.0",
 ]
 
 [[package]]
@@ -2918,7 +3001,7 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "loco-oauth2",
- "loco-rs",
+ "loco-rs 0.14.1",
  "sea-orm-migration",
 ]
 
@@ -4037,9 +4120,9 @@ dependencies = [
 
 [[package]]
 name = "rrgen"
-version = "0.5.5"
+version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18e27f5f254d89b0b5b76445442e5c935b63a566ee5a735c9d877ca2029b4ce9"
+checksum = "ee7a7ede035354391a37e42aa4935b3d8921f0ded896d2ce44bb1a3b6dd76bab"
 dependencies = [
  "cruet 0.13.3",
  "fs-err",
@@ -5962,7 +6045,23 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "url",
- "validator_derive",
+ "validator_derive 0.19.0",
+]
+
+[[package]]
+name = "validator"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43fb22e1a008ece370ce08a3e9e4447a910e92621bb49b85d6e48a45397e7cfa"
+dependencies = [
+ "idna",
+ "once_cell",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "url",
+ "validator_derive 0.20.0",
 ]
 
 [[package]]
@@ -5970,6 +6069,20 @@ name = "validator_derive"
 version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bac855a2ce6f843beb229757e6e570a42e837bcb15e5f449dd48d5747d41bf77"
+dependencies = [
+ "darling",
+ "once_cell",
+ "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
+]
+
+[[package]]
+name = "validator_derive"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7df16e474ef958526d1205f6dda359fdfab79d9aa6d54bafcb92dcd07673dca"
 dependencies = [
  "darling",
  "once_cell",
