@@ -162,7 +162,7 @@ mod tests {
     };
     use loco_rs::controller::middleware::{self, request_id::RequestId};
     use loco_rs::environment::Environment;
-    use loco_rs::prelude::SharedStore;
+    use loco_rs::app::SharedStore;
     use loco_rs::storage::Storage;
     use loco_rs::{cache, storage};
     use sea_orm::DatabaseConnection;
