@@ -1,3 +1,5 @@
+
+
 > **⚠️ SECURITY UPDATE ⚠️**  
 > A critical security vulnerability has been discovered in documentation versions prior to 0.4.1
 > Please update to the latest version immediately.  
@@ -10,7 +12,7 @@ implementing OAuth2 in your application.
 
 ## Docs
 
-Offical `RFC 6749` OAuth2 documentation can be found [here](https://datatracker.ietf.org/doc/html/rfc6749).\
+Official `RFC 6749` OAuth2 documentation can be found [here](https://datatracker.ietf.org/doc/html/rfc6749).\
 Shuttle tutorial can be found [here](https://www.shuttle.rs/blog/2023/08/30/using-oauth-with-axum).
 
 ## What is OAuth2?
