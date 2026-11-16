@@ -8,7 +8,6 @@ use axum::{
     Extension, RequestPartsExt,
 };
 use axum_extra::extract;
-use cookie::{Cookie, Key};
 use http::HeaderMap;
 use loco_rs::prelude::AppContext;
 use oauth2::basic::BasicTokenResponse;
@@ -44,30 +43,36 @@ impl OAuth2PrivateCookieJar {
     #[must_use]
     #[allow(unused_mut)]
     #[allow(clippy::should_implement_trait)]
-    pub fn add<C: Into<Cookie<'static>>>(mut self, cookie: C) -> Self {
+    pub fn add<C: Into<axum_extra::extract::cookie::Cookie<'static>>>(mut self, cookie: C) -> Self {
         Self(self.0.add(cookie.into()))
     }
     #[must_use]
-    pub fn from_headers(headers: &HeaderMap, key: Key) -> Self {
+    pub fn from_headers(headers: &HeaderMap, key: axum_extra::extract::cookie::Key) -> Self {
         Self(extract::cookie::PrivateCookieJar::from_headers(
             headers, key,
         ))
     }
     #[must_use]
-    pub fn get(&self, name: &str) -> Option<Cookie<'static>> {
+    pub fn get(&self, name: &str) -> Option<axum_extra::extract::cookie::Cookie<'static>> {
         self.0.get(name)
     }
     #[must_use]
     #[allow(unused_mut)]
-    pub fn remove<C: Into<Cookie<'static>>>(mut self, cookie: C) -> Self {
+    pub fn remove<C: Into<axum_extra::extract::cookie::Cookie<'static>>>(
+        mut self,
+        cookie: C,
+    ) -> Self {
         Self(self.0.remove(cookie.into()))
     }
-    pub fn iter(&self) -> impl Iterator<Item = Cookie<'static>> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = cookie::Cookie<'static>> + '_ {
         self.0.iter()
     }
 
     #[must_use]
-    pub fn decrypt(&self, cookie: Cookie<'static>) -> Option<Cookie<'static>> {
+    pub fn decrypt(
+        &self,
+        cookie: axum_extra::extract::cookie::Cookie<'static>,
+    ) -> Option<axum_extra::extract::cookie::Cookie<'static>> {
         self.0.decrypt(cookie)
     }
 }
@@ -117,14 +122,17 @@ impl OAuth2PrivateCookieJarTrait for OAuth2PrivateCookieJar {
         let protected_path = protected_url.path();
         // Create the cookie with the session id, domain, path, and secure flag from
         // the token and profile
-        let cookie = cookie::Cookie::build((COOKIE_NAME, token.access_token().secret().to_owned()))
-            .domain(protected_domain.to_string())
-            .path(protected_path.to_owned())
-            // secure flag is for https - https://datatracker.ietf.org/doc/html/rfc6749#section-3.1.2.1
-            .secure(true)
-            // Restrict access in the client side code to prevent XSS attacks
-            .http_only(true)
-            .max_age(time::Duration::seconds(secs));
+        let cookie = axum_extra::extract::cookie::Cookie::build((
+            COOKIE_NAME,
+            token.access_token().secret().to_owned(),
+        ))
+        .domain(protected_domain.to_string())
+        .path(protected_path.to_owned())
+        // secure flag is for https - https://datatracker.ietf.org/doc/html/rfc6749#section-3.1.2.1
+        .secure(true)
+        // Restrict access in the client side code to prevent XSS attacks
+        .http_only(true)
+        .max_age(time::Duration::seconds(secs));
         Ok(jar.add(cookie))
     }
 }
@@ -157,86 +165,38 @@ mod tests {
     use axum_extra::extract::PrivateCookieJar;
     use axum_test::TestServer;
     use http::header::{HeaderValue, COOKIE};
-    use loco_rs::app::SharedStore;
-    use loco_rs::config::{
-        CacheConfig, Config, Database, InMemCacheConfig, Logger, Server, Workers,
-    };
-    use loco_rs::controller::middleware::{self, request_id::RequestId};
+    use loco_rs::controller::middleware::request_id::RequestId;
     use loco_rs::environment::Environment;
-    use loco_rs::storage::Storage;
-    use loco_rs::{cache, storage};
     use sea_orm::DatabaseConnection;
     use serde_json::json;
     use std::collections::BTreeMap;
-    use std::sync::Arc;
 
     // Helper function to create a Key for encryption/decryption
-    fn create_key() -> Key {
-        Key::generate()
+    fn create_key() -> axum_extra::extract::cookie::Key {
+        axum_extra::extract::cookie::Key::generate()
     }
     // Helper function to create a default AppContext for testing
     fn create_default_app_context() -> AppContext {
-        AppContext {
-            environment: Environment::Production,
-            db: DatabaseConnection::default(),
-            queue_provider: None,
-            config: Config {
-                initializers: None,
-                logger: Logger::default(),
-                server: Server {
-                    binding: "test-binding".to_string(),
-                    port: 8080,
-                    host: "test-host".to_string(),
-                    ident: None,
-                    middlewares: middleware::Config {
-                        compression: None,
-                        etag: None,
-                        limit_payload: None,
-                        logger: None,
-                        catch_panic: None,
-                        timeout_request: None,
-                        cors: None,
-                        static_assets: None,
-                        secure_headers: None,
-                        remote_ip: None,
-                        fallback: None,
-                        request_id: Some(RequestId { enable: true }),
-                    },
-                },
-                database: Database {
-                    uri: String::new(),
-                    enable_logging: false,
-                    min_connections: 0,
-                    max_connections: 0,
-                    connect_timeout: 0,
-                    idle_timeout: 0,
-                    acquire_timeout: None,
-                    auto_migrate: false,
-                    dangerously_truncate: false,
-                    dangerously_recreate: false,
-                    run_on_start: None,
-                },
-                auth: None,
-                workers: Workers::default(),
-                mailer: None,
-                settings: None,
-                queue: None,
-                scheduler: None,
-                cache: CacheConfig::InMem(InMemCacheConfig { max_capacity: 64 }),
-            },
-            shared_store: Arc::new(SharedStore::default()),
-            mailer: None,
-            storage: Storage::single(storage::drivers::null::new()).into(),
-            cache: cache::Cache::new(cache::drivers::null::new()).into(),
-        }
+        let mut config = loco_rs::tests_cfg::config::test_config();
+        config.server.middlewares.request_id = Some(RequestId { enable: true });
+        AppContext::builder(
+            Environment::Production,
+            DatabaseConnection::default(),
+            config,
+        )
+        .build()
     }
-    fn cookies_from_request(headers: &HeaderMap) -> impl Iterator<Item = Cookie<'static>> + '_ {
+    fn cookies_from_request(
+        headers: &HeaderMap,
+    ) -> impl Iterator<Item = axum_extra::extract::cookie::Cookie<'static>> + '_ {
         headers
             .get_all(COOKIE)
             .into_iter()
             .filter_map(|value| value.to_str().ok())
             .flat_map(|value| value.split(';'))
-            .filter_map(|cookie| Cookie::parse_encoded(cookie.to_owned()).ok())
+            .filter_map(|cookie| {
+                axum_extra::extract::cookie::Cookie::parse_encoded(cookie.to_owned()).ok()
+            })
     }
 
     #[tokio::test]
@@ -248,7 +208,8 @@ mod tests {
 
         let cookie_name = "test_cookie";
         let cookie_value = "test_value";
-        let cookie = Cookie::build((cookie_name, cookie_value)).http_only(true);
+        let cookie =
+            axum_extra::extract::cookie::Cookie::build((cookie_name, cookie_value)).http_only(true);
 
         // Add a cookie
         let jar = jar.add(cookie.clone());
@@ -272,7 +233,8 @@ mod tests {
 
         let cookie_name = "test_cookie";
         let cookie_value = "test_value";
-        let cookie = Cookie::build((cookie_name, cookie_value)).http_only(true);
+        let cookie =
+            axum_extra::extract::cookie::Cookie::build((cookie_name, cookie_value)).http_only(true);
 
         // Add a cookie
         let jar = jar.add(cookie.clone());
@@ -294,7 +256,7 @@ mod tests {
         let key = create_key();
         let cookie_name = "test_cookie";
         let cookie_value = "test_value";
-        let cookie = Cookie::new(cookie_name, cookie_value);
+        let cookie = axum_extra::extract::cookie::Cookie::new(cookie_name, cookie_value);
 
         // Create a PrivateCookieJar and add a cookie to it
         let jar = PrivateCookieJar::new(key.clone());
@@ -338,7 +300,8 @@ mod tests {
 
         let cookie_name = "test_cookie";
         let cookie_value = "test_value";
-        let cookie = Cookie::build((cookie_name, cookie_value)).http_only(true);
+        let cookie =
+            axum_extra::extract::cookie::Cookie::build((cookie_name, cookie_value)).http_only(true);
 
         // Add a cookie
         let jar = jar.add(cookie.clone());
@@ -365,7 +328,7 @@ mod tests {
             .with_state(create_default_app_context())
             .layer(Extension(oauth2_store.clone()));
         // Run the application for testing.
-        let server = TestServer::new(routes).unwrap();
+        let server = TestServer::new(routes);
         // Simulate a request
         let response = server.get("/").json(&json!({})).await;
         let response_status = StatusCode::from_u16(response.status_code().as_u16()).unwrap();

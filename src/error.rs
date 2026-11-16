@@ -1,7 +1,5 @@
 use crate::oauth2_grant::OAuth2ClientGrantEnum;
-use oauth2::basic::BasicErrorResponseType;
-use oauth2::{url::ParseError, HttpClientError, RequestTokenError, StandardErrorResponse};
-use reqwest::Error;
+use oauth2::url::ParseError;
 use std::fmt::{Debug, Display};
 
 #[allow(clippy::module_name_repetitions)]
@@ -26,20 +24,20 @@ impl OAuth2StoreError {
             Self::ClientNotFound => "Client not found".to_string(),
             Self::ClientTypeMismatch(credential_identifier, client) => match client {
                 OAuth2ClientGrantEnum::AuthorizationCode(_) => {
-                    format!("Authorization Code client already exists with credential identifier: {credential_identifier}", )
+                    format!("Authorization Code client already exists with credential identifier: {credential_identifier}")
                 }
                 OAuth2ClientGrantEnum::ClientCredentials => {
-                    format!("Client Credentials client already exists with credential identifier: {credential_identifier}", )
+                    format!("Client Credentials client already exists with credential identifier: {credential_identifier}")
                 }
-                OAuth2ClientGrantEnum::DeviceCode => format!("Device Code client already exists with credential identifier: {credential_identifier}", ),
-                OAuth2ClientGrantEnum::Implicit => format!("Implicit client already exists with credential identifier: {credential_identifier}", ),
+                OAuth2ClientGrantEnum::DeviceCode => format!("Device Code client already exists with credential identifier: {credential_identifier}"),
+                OAuth2ClientGrantEnum::Implicit => format!("Implicit client already exists with credential identifier: {credential_identifier}"),
                 OAuth2ClientGrantEnum::ResourceOwnerPasswordCredentials => format!(
-                    "Resource Owner Password Credentials client already exists with credential identifier: {credential_identifier}", 
+                    "Resource Owner Password Credentials client already exists with credential identifier: {credential_identifier}",
                 ),
             },
-            Self::ConfigJson(err) => format!("Cannot parse JSON for OAuth2 configuration: {err}", ),
-            Self::ClientCreation(err) => format!("Error creating client: {err}", ),
-            Self::KeyConversion(err) => format!("Error converting key: {err}", ),
+            Self::ConfigJson(err) => format!("Cannot parse JSON for OAuth2 configuration: {err}"),
+            Self::ClientCreation(err) => format!("Error creating client: {err}"),
+            Self::KeyConversion(err) => format!("Error converting key: {err}"),
         }
     }
 }
@@ -71,8 +69,10 @@ pub enum OAuth2ClientError {
     ConfigError(#[from] oauth2::ConfigurationError),
 }
 
-type BasicTokenError =
-    RequestTokenError<HttpClientError<Error>, StandardErrorResponse<BasicErrorResponseType>>;
+type BasicTokenError = oauth2::RequestTokenError<
+    oauth2::HttpClientError<oauth2::reqwest::Error>,
+    oauth2::StandardErrorResponse<oauth2::basic::BasicErrorResponseType>,
+>;
 
 pub type OAuth2ClientResult<T> = std::result::Result<T, OAuth2ClientError>;
 pub type OAuth2StoreResult<T> = std::result::Result<T, OAuth2StoreError>;
