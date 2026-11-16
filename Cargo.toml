@@ -33,19 +33,18 @@ axum_session = ["dep:axum_session"]
 
 [dependencies]
 async-trait = "0.1"
-async-std = { version = "1", features = ["attributes", "tokio1"] }
 axum = "0.8"
 axum-extra = { version = "0.12", features = ["cookie", "cookie-private"] }
 # axum session (optional, enabled by default)
-axum_session = { version = "0.17", optional = true }
+axum_session = { version = "0.23", optional = true }
 # tower-sessions (optional, enabled with use_tower_sessions feature)
-tower-sessions = { version = "0.14", optional = true }
+tower-sessions = { version = "0.15", optional = true }
 cookie = { version = "0.18", features = ["private"] }
-http = "1.1"
-loco-rs = { version = "0.16.3" }
+http = "1.5"
+loco-rs = { version = "1.3" }
 oauth2 = "5.0"
-reqwest = { version = "0.12", features = ["json"] }
-sea-orm = { version = "1.0.0-rc.4", features = [
+reqwest = { version = "0.13", features = ["json"] }
+sea-orm = { version = "2.0", features = [
     "sqlx-sqlite",
     "sqlx-postgres",
     "runtime-tokio-rustls",
@@ -53,23 +52,25 @@ sea-orm = { version = "1.0.0-rc.4", features = [
 ] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-subtle = { version = "2.5" }
+subtle = { version = "2.6" }
 thiserror = "2"
 time = "0.3"
-tokio = { version = "1.36", features = ["full"] }
+tokio = { version = "1.54", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 
 [dependencies.sea-orm-migration]
-version = "1.0.0-rc.1"
+version = "2.0.4"
 features = [
     # Enable at least one `ASYNC_RUNTIME` and `DATABASE_DRIVER` feature if you want to run migration via CLI.
     # View the list of supported features at https://www.sea-ql.org/SeaORM/docs/install-and-config/database-and-async-runtime.
     # e.g.
     "runtime-tokio-rustls", # `ASYNC_RUNTIME` feature
 ]
+
 [dev-dependencies]
-axum-test = "18"
+axum-test = "21.1.0"
+loco-rs = { version = "1.3" , features = ["testing"] }
 serde_urlencoded = "0.7.1"
 wiremock = "0.6"

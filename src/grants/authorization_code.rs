@@ -313,7 +313,7 @@ pub trait GrantTrait: Send + Sync {
     ///     let csrf_token = session_store.get::<String>("csrf_token").await.unwrap();
     ///     // Get the client from the store
     ///     let client = oauth_client_store.get("google").unwrap();
-    ///     // Get the token and profile from the client   
+    ///     // Get the token and profile from the client
     ///     let (token, profile) = client.verify_code_from_callback(query.code, query.state, csrf_token).await.unwrap();
     ///     // Parse the user's profile
     ///     let profile = profile.json::<UserProfile>().await.unwrap();
@@ -330,7 +330,7 @@ pub trait GrantTrait: Send + Sync {
     ///      let jar = jar.add(cookie);
     ///      Ok((jar, Redirect::to("/protected")))
     /// }
-    ///     
+    ///
     async fn verify_code_from_callback(
         &mut self,
         code: String,
@@ -433,11 +433,11 @@ mod tests {
                 client_id: "test_client_id".to_string(),
                 client_secret: "test_client_secret".to_string(),
                 code: "test_code".to_string(),
-                auth_url: format!("{url}/auth_url",),
-                token_url: format!("{url}/token_url",),
-                redirect_url: format!("{url}/redirect_url",),
-                profile_url: format!("{url}/profile_url",),
-                scope: format!("{url}/scope_1",),
+                auth_url: format!("{url}/auth_url"),
+                token_url: format!("{url}/token_url"),
+                redirect_url: format!("{url}/redirect_url"),
+                profile_url: format!("{url}/profile_url"),
+                scope: format!("{url}/scope_1"),
                 exchange_mock_body,
                 profile_mock_body: user_profile,
                 mock_server: server,
@@ -459,15 +459,15 @@ mod tests {
     async fn create_client() -> OAuth2ClientResult<(Client, Settings)> {
         let settings = Settings::new().await;
         let credentials = Credentials {
-            client_id: settings.client_id.to_string(),
-            client_secret: settings.client_secret.to_string(),
+            client_id: settings.client_id.clone(),
+            client_secret: settings.client_secret.clone(),
         };
         let url_config = UrlConfig {
-            auth_url: settings.auth_url.to_string(),
-            token_url: settings.token_url.to_string(),
-            redirect_url: settings.redirect_url.to_string(),
-            profile_url: settings.profile_url.to_string(),
-            scopes: vec![settings.scope.to_string()],
+            auth_url: settings.auth_url.clone(),
+            token_url: settings.token_url.clone(),
+            redirect_url: settings.redirect_url.clone(),
+            profile_url: settings.profile_url.clone(),
+            scopes: vec![settings.scope.clone()],
         };
         let cookie_config = CookieConfig {
             protected_url: None,
@@ -583,8 +583,8 @@ mod tests {
             .await;
         let (_url, csrf_token) = client.get_authorization_url();
 
-        let state = csrf_token.secret().to_string();
-        let csrf_token = csrf_token.secret().to_string();
+        let state = csrf_token.secret().clone();
+        let csrf_token = csrf_token.secret().clone();
         let (_token, profile) = client
             .verify_code_from_callback(settings.code, state, csrf_token)
             .await?;
